@@ -162,13 +162,14 @@ void wifi_access_mode()
       inputParam = "none";
     }
     Serial.println(SSID+"\n"+Password);
-    request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" 
-                                     + inputParam +""+inputParam2+ ") with value: " + SSID +" and "+ Password+ 
-                                     "<br><a href=\"/\">Return to Home Page</a>");
+    
+    request->send_P(200, "text/html", wifiConfigurationSucceedPage);
     delay(3000); // Wait to settle system
     ESP.restart();  // Automtically restarts system into client mode
     
   });
+
+  
   
   server.onNotFound(not_found);
   server.begin();
