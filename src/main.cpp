@@ -161,6 +161,7 @@ void wifi_access_mode()
       SSID = "No message sent";
       inputParam = "none";
     }
+
     Serial.println(SSID+"\n"+Password);
     
     request->send_P(200, "text/html", wifiConfigurationSucceedPage);
@@ -456,6 +457,39 @@ void task_capturing_real_time(void *pvParameters)
 ///////////////////////////////////////////////////
 ///            Handling MQTT Callback           ///
 ///////////////////////////////////////////////////
+system_status translateMqttMessageToSystemStatus(String mqttTopic, String mqttMessage){
+  system_status result;
+  if(mqttTopic.equals(MQTT_SUB_COM_SET_CONT))
+    result.is_sending_status_continous_set = mqttMessage.toInt();//logic; 
+  else if(mqttTopic.equals(MQTT_SUB_COM_SET_BEACON))
+    result.is_hazard_beacon_set = mqttMessage.toInt();//logic;
+  else if(mqttTopic.equals(MQTT_SUB_COM_SET_BUZZER))
+    result.is_buzzer_set = mqttMessage.toInt();//logic;
+  else if(mqttTopic.equals(MQTT_SUB_COM_SET_ALARM))
+    result.is_alarm_set = mqttMessage.toInt();//logic;
+  else if(mqttTopic.equals(MQTT_SUB_COM_SET_LIGHT))
+    result.is_light_set = mqttMessage.toInt();//logic;
+  else if(mqttTopic.equals(MQTT_SUB_COM_SET_MON))
+    result.is_monitoring_set = mqttMessage.toInt();//logic;
+  else if(mqttTopic.equals(MQTT_SUB_COM_SET_REC))
+    result.is_recording_set = mqttMessage.toInt();//logic;
+  else if(mqttTopic.equals(MQTT_SUB_COM_SET_RES))
+  {
+    result.camera_resolution = mqttMessage.toInt();
+  }
+  return result;
+}
+
+void setSystemStatus(system_status newStatus){
+  status.is_sending_status_continous_set = newStatus.is_sending_status_continous_set;
+  status.is_hazard_beacon_set = newStatus.is_hazard_beacon_set;
+  status.is_buzzer_set = newStatus.is_buzzer_set;
+  status.is_alarm_set = newStatus.is_alarm_set;
+  status.is_light_set = newStatus.is_light_set;
+  status.is_monitoring_set = newStatus.is_monitoring_set;
+  status.is_recording_set = newStatus.is_recording_set;
+  status.camera_resolution = newStatus.camera_resolution;
+}
 
 void mqtt_callback(char* topic, byte* message, unsigned int length) 
 {
@@ -481,27 +515,40 @@ void mqtt_callback(char* topic, byte* message, unsigned int length)
     return;
   }
 
-  if(topic_string.equals(MQTT_SUB_COM_SET_CONT))
-    status.is_sending_status_continous_set = message_string.toInt();//logic; 
-  else if(topic_string.equals(MQTT_SUB_COM_SET_BEACON))
-    status.is_hazard_beacon_set = message_string.toInt();//logic;
-  else if(topic_string.equals(MQTT_SUB_COM_SET_BUZZER))
-    status.is_buzzer_set = message_string.toInt();//logic;
-  else if(topic_string.equals(MQTT_SUB_COM_SET_ALARM))
-    status.is_alarm_set = message_string.toInt();//logic;
-  else if(topic_string.equals(MQTT_SUB_COM_SET_LIGHT))
-    status.is_light_set = message_string.toInt();//logic;
-  else if(topic_string.equals(MQTT_SUB_COM_SET_MON))
-    status.is_monitoring_set = message_string.toInt();//logic;
-  else if(topic_string.equals(MQTT_SUB_COM_SET_REC))
-    status.is_recording_set = message_string.toInt();//logic;
-  else if(topic_string.equals(MQTT_SUB_COM_SET_RES))
-  {
-    status.camera_resolution = message_string.toInt();
-    camera.change_resolution(status.camera_resolution);
+  // if(topic_string.equals(MQTT_SUB_COM_SET_CONT))
+  //   status.is_sending_status_continous_set = message_string.toInt();//logic; 
+  // else if(topic_string.equals(MQTT_SUB_COM_SET_BEACON))
+  //   status.is_hazard_beacon_set = message_string.toInt();//logic;
+  // else if(topic_string.equals(MQTT_SUB_COM_SET_BUZZER))
+  //   status.is_buzzer_set = message_string.toInt();//logic;
+  // else if(topic_string.equals(MQTT_SUB_COM_SET_ALARM))
+  //   status.is_alarm_set = message_string.toInt();//logic;
+  // else if(topic_string.equals(MQTT_SUB_COM_SET_LIGHT))
+  //   status.is_light_set = message_string.toInt();//logic;
+  // else if(topic_string.equals(MQTT_SUB_COM_SET_MON))
+  //   status.is_monitoring_set = message_string.toInt();//logic;
+  // else if(topic_string.equals(MQTT_SUB_COM_SET_REC))
+  //   status.is_recording_set = message_string.toInt();//logic;
+  // else if(topic_string.equals(MQTT_SUB_COM_SET_RES))
+  // {
+  //   status.camera_resolution = message_string.toInt();
+  //   camera.change_resolution(status.camera_resolution);
+  // }
+
+  system_status newStatus = translateMqttMessageToSystemStatus(topic_string, message_string);
+  if(newStatus.camera_resolution != status.camera_resolution){
+    camera.change_resolution(newStatus.camera_resolution);
   }
 
+  Serial.print("New STatu Is monitoring");
+  Serial.println(newStatus.is_monitoring_set);
+  status = newStatus;
+  //setSystemStatus(newStatus);
+
 }
+
+
+
 
 ///////////////////////////////////////////////////
 //               Get System Status               //
