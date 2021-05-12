@@ -135,7 +135,7 @@ void wifi_access_mode()
   // Send web page with input fields to client
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
   {
-      request->send_P(200, "text/html", wifiConfigurationIndexPage);
+      request->send_P(200, "text/html", html_page);
   });
 
   // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
