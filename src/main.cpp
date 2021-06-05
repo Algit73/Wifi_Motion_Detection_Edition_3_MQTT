@@ -93,39 +93,6 @@ void not_found(AsyncWebServerRequest *request)
   request->send(404, "text/plain", "Not found");
 }
 
-static void IRAM_ATTR detectsMovement(void * arg)
-{
-  #ifdef DEBUG_MODE
-  Serial.println(F("Interrupt"));
-  #endif 
-
-  if(!peripheral.setup_pin_state())
-    //check_wifi_reset_mode();
-    xTaskCreatePinnedToCore(
-      task_reset_device
-      ,  "Reset Device"
-      ,  1024*2  // Stack size
-      ,  NULL
-      ,  5  // Priority
-      ,  &reset_task 
-      ,  ARDUINO_RUNNING_CORE);
-}
-
-void serial_debug(String string)
-{
-  #ifdef DEBUG_MODE
-  Serial.println(string);
-  #endif
-}
-
-template <typename T>
-void printf_debug(String string, T msg)
-{
-  #ifdef DEBUG_MODE
-  Serial.printf(string.c_str(), msg);
-  #endif
-}
-
 
 
 // the setup function runs once when you press reset or power the board
@@ -229,7 +196,11 @@ void wifi_access_mode()
       SSID = "No message sent";
       inputParam = "none";
     }
+<<<<<<< HEAD
     /// Serial.println(SSID+"\n"+Password);
+=======
+    //Serial.println(SSID+"\n"+Password);
+>>>>>>> 93bd092ffc031a9a1da8c1bca244e97d312a2ac3
     serial_debug(SSID+"\n"+Password);
     request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" 
                                      + inputParam +""+inputParam2+ ") with value: " + SSID +" and "+ Password+ 
@@ -250,7 +221,11 @@ void wifi_client_mode ()
   /// Adding offline threads: Motion Detection and Siren
   calling_offline_threads();
   
+<<<<<<< HEAD
   /// Connecting to the WIFI Network
+=======
+  // Connecting to the WIFI Network
+>>>>>>> 93bd092ffc031a9a1da8c1bca244e97d312a2ac3
   wifi.get_auth(e2prom.wifi_auth_read());
   wifi_trying_to_connect();
   

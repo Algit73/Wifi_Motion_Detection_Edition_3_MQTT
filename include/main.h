@@ -50,7 +50,7 @@ const char html_page [] PROGMEM = R"rawliteral(
   
 </body></html>)rawliteral";
 
-
+const char wifiConfigurationSucceedPage [] PROGMEM = "<!DOCTYPE html><html lang='fa' dir='rtl'><head><meta charset='utf-8'><title>هوشیار | تنظیمات شبکه</title><meta name='viewport' content='width=device-width'></head><body><h1>تبریک</h1><p>در صورت صحیح بودن اطلاعات اتصال به شبکه ی داخلی،دستگاه شما تا لحضات دیگر به شبکه متصل خواهد شد...</p></body></html>";
 
 
 //#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<LED_BUILTIN) | (1ULL<<SIREN_PIN))
