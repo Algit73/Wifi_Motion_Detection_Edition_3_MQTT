@@ -658,14 +658,14 @@ void check_wifi_reset_mode()
           #ifdef DEBUG_MODE
           Serial.println(F("Reset Activated"));
           #endif
-          /*
+          
           WiFi.disconnect();  // To be sure that wifi tasks will not interfere
           e2prom.wifi_mode_write (ACCESS_MODE);
           delay(100);
           esp_camera_deinit();
           delay(100);
           ESP.restart();
-          */
+          
         }
         delay(500);
       }
