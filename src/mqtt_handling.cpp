@@ -20,11 +20,14 @@ void mqtt_handling::reconnect()
   // Loop until we're reconnected
   while (!client_mqtt.connected()) 
   {
-    Serial.print("Attempting MQTT connection...");
+    if(WiFi.status() != WL_CONNECTED)
+      break;
+
+    Serial.print(F("Attempting MQTT connection..."));
     // Attempt to connect
     if (client_mqtt.connect(MQTT_ID)) 
     {
-      Serial.println("connected");
+      Serial.println(F("connected"));
       // Subscribe
       client_mqtt.subscribe(MQTT_SUBSCRIBE_COMMAND);
       client_mqtt.subscribe(MQTT_SUB_COM_SET_REC);
@@ -41,9 +44,9 @@ void mqtt_handling::reconnect()
     } 
     else 
     {
-      Serial.print("failed, rc=");
+      Serial.print(F("failed, rc="));
       Serial.print(client_mqtt.state());
-      Serial.println(" try again in 2 seconds");
+      Serial.println(F(" try again in 2 seconds"));
       // Wait 2 seconds before retrying
       delay(2000);
     }
@@ -68,9 +71,9 @@ void mqtt_handling::loop()
 void mqtt_handling::publish_command(const char* key, const char* value)
 {
     loop();
-    Serial.print(key);
-    Serial.print(": ");
-    Serial.println(value);
+    //Serial.print(key);
+    //Serial.print(": ");
+    //Serial.println(value);
     client_mqtt.publish(key,value);
 }
 

@@ -86,41 +86,28 @@ void rgb_handling::siren_alarm()
 }
 
 
-void rgb_handling::siren_and_alarm(int mode)
+void rgb_handling::siren_and_alarm()
 {
-  for (int i=0;i<3;i++)
-  {
+  //for (int i=0;i<3;i++)
+  //{
     for (int pixel_value=10;pixel_value<200;pixel_value++)
     {
-      if(mode!=SIREN_ONLY)
-        ledcWrite(3,pixel_value);
-      else
-        ledcWrite(3,0);
 
-      if(mode)
-      {
-        for (int index=0;index<NUMPIXELS;index++)
-          pixels.setPixelColor(index, pixels.Color(pixel_value,10,10));
-        pixels.show();
-      }
-      delay(3);
+      for (int index=0;index<NUMPIXELS;index++)
+        pixels.setPixelColor(index, pixels.Color(pixel_value,10,10));
+      pixels.show();
+      
+      vTaskDelay(3);
     }
     for (int pixel_value=200;pixel_value>10;pixel_value--)
     {
-      if(mode!=SIREN_ONLY)
-        ledcWrite(3,pixel_value);
-      else
-        ledcWrite(3,0);
-
-      if(mode)
-      {
         for (int index=0;index<NUMPIXELS;index++)
           pixels.setPixelColor(index, pixels.Color(pixel_value,10,10));
         pixels.show();
-      }
-      delay(3);
+
+      vTaskDelay(3);
     }
-  }
+  //}
 
   //on_off(true);
 }
