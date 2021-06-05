@@ -198,20 +198,20 @@ void calling_offline_threads()
 // Wifi acts as an access point
 void wifi_access_mode()
 {
-  // Put Wifi into Access mode
+  /// Put Wifi into Access mode
   wifi.access_mode();
-  // Send web page with input fields to client
+  /// Send web page with input fields to client
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
   {
       request->send_P(200, "text/html", html_page);
   });
 
-  // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
+  /// Send a GET request to <ESP_IP>/get?input1=<inputMessage>
   server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) 
   {
     String inputParam,inputParam2;
     String SSID,Password;
-    // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
+    /// GET input1 value on <ESP_IP>/get?input1=<inputMessage>
     if (request->hasParam(PARAM_INPUT_1)) 
     {
       SSID = request->getParam(PARAM_INPUT_1)->value();
@@ -219,7 +219,7 @@ void wifi_access_mode()
       inputParam = PARAM_INPUT_1;
       inputParam2 = PARAM_INPUT_2;
 
-      // Writing SSID and Password on EEPROM
+      /// Writing SSID and Password on EEPROM
       String authenticaiton  =(SSID+"\n"+Password+"\n");
       e2prom.write(authenticaiton.c_str(),0);
       e2prom.wifi_mode_write (CLIENT_MODE);
@@ -229,7 +229,11 @@ void wifi_access_mode()
       SSID = "No message sent";
       inputParam = "none";
     }
+<<<<<<< HEAD
+    /// Serial.println(SSID+"\n"+Password);
+=======
     //Serial.println(SSID+"\n"+Password);
+>>>>>>> 93bd092ffc031a9a1da8c1bca244e97d312a2ac3
     serial_debug(SSID+"\n"+Password);
     request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" 
                                      + inputParam +""+inputParam2+ ") with value: " + SSID +" and "+ Password+ 
@@ -243,14 +247,18 @@ void wifi_access_mode()
   
 }
 
-// Wifi acts as a client
+/// Wifi acts as a client
 
 void wifi_client_mode ()
 {
-  // Adding offline threads: Motion Detection and Siren
+  /// Adding offline threads: Motion Detection and Siren
   calling_offline_threads();
   
+<<<<<<< HEAD
+  /// Connecting to the WIFI Network
+=======
   // Connecting to the WIFI Network
+>>>>>>> 93bd092ffc031a9a1da8c1bca244e97d312a2ac3
   wifi.get_auth(e2prom.wifi_auth_read());
   wifi_trying_to_connect();
   
