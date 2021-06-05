@@ -23,6 +23,6 @@ class rgb_handling
         void wifi_connected();
         void error(void);
         void siren_alarm(void);
-        void siren_and_alarm(int mode);
+        void siren_and_alarm(void);
         void on_off(bool on);
 };

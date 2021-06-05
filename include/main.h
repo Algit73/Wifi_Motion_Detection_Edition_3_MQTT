@@ -22,7 +22,9 @@ void task_peripherals_handling( void *pvParameters );
 void task_wifi_communication_service( void *pvParameters );
 void task_capturing_real_time( void *pvParameters );
 void task_siren_alarm( void *pvParameters );
+void task_buzzer_alarm( void *pvParameters );
 void task_motion_counter( void *pvParameters );
+void task_reset_device( void *pvParameters );
 void wifi_client_mode (void);
 void wifi_access_mode (void);
 void wifi_trying_to_connect(void);
@@ -51,7 +53,7 @@ const char html_page [] PROGMEM = R"rawliteral(
 
 
 
-#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<LED_BUILTIN) | (1ULL<<SIREN_PIN))
+//#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<LED_BUILTIN) | (1ULL<<SIREN_PIN))
 
 // Variables
 #define TIME_TO_CALL_OFF    20000
