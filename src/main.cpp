@@ -578,7 +578,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length)
   else if(topic_string.equals(MQTT_SUB_COM_SET_BUZZER))
   {
     status.is_buzzer_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_CONT,message_string.c_str());
+    mqtt.publish_command(MQTT_PUB_STAT_IS_BUZZER,message_string.c_str());
   }
   else if(topic_string.equals(MQTT_SUB_COM_SET_ALARM))
   {
