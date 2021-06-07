@@ -390,6 +390,7 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
     if(wifi.is_connected())
     { 
       /// Default mode: User controlled mode
+      //
       if(!realtime_capturing_activated)
       {
         if(status.is_sending_status_continous_set)
