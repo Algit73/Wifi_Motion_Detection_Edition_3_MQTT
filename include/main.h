@@ -18,7 +18,7 @@
 
 
 // Tasks and Functions' Signatures
-void task_peripherals_handling( void *pvParameters );
+void task_rgb_handling( void *pvParameters );
 void task_wifi_communication_service( void *pvParameters );
 void task_capturing_real_time( void *pvParameters );
 void task_siren_alarm( void *pvParameters );
@@ -27,7 +27,7 @@ void task_motion_counter( void *pvParameters );
 void task_reset_device( void *pvParameters );
 void wifi_client_mode (void);
 void wifi_access_mode (void);
-void wifi_trying_to_connect(void);
+void start_client_mode(void);
 void calling_offline_threads(void);
 void wifi_receiving_command(const char *,size_t);
 void check_wifi_reset_mode (void);

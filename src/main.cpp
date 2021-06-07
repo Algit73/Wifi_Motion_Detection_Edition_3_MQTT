@@ -8,7 +8,7 @@
 #include <ArduinoJson.h>
 
 
-#include <AsyncTCP.h>
+//#include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
 #include <main.h>
@@ -21,7 +21,7 @@
 
 
 
-AsyncWebServer server(80);
+//AsyncWebServer server(80);
 
 
 // MQTT Configs
@@ -88,7 +88,7 @@ static TaskHandle_t motion_counter_task = NULL;
 camera_handling camera;
 
 
-void not_found(AsyncWebServerRequest *request) 
+void on_page_not_found(AsyncWebServerRequest *request) 
 {
   request->send(404, "text/plain", "Not found");
 }
@@ -142,15 +142,72 @@ void setup()
   if(e2prom.wifi_mode_read())
     wifi_client_mode();
   else
-    wifi_access_mode();
+    wifi.access_mode(on_page_not_found);
 
   #ifdef DEBUG_MODE
   Serial.println(F("OK"));
   #endif
-  
-  
 }
 
+
+/// Wifi client mode
+void wifi_client_mode ()
+{
+  /// Adding offline threads: Motion Detection and Siren
+  calling_offline_threads();
+  
+  /// Start client mode
+  start_client_mode();
+  
+  camera.camera_init(FRAMESIZE_XGA);
+  delay(10);
+
+  bool err = gpio_isr_handler_add(GPIO_NUM_13, &detectsMovement, (void *) 13);
+  if (err != ESP_OK)
+    printf_debug("handler add failed with error 0x%x \r\n", err);
+
+  err = gpio_set_intr_type(GPIO_NUM_13, GPIO_INTR_NEGEDGE);
+  if (err != ESP_OK)
+    printf_debug("set intr type failed with error 0x%x \r\n", err);
+  
+  /// Defining online tasks
+  xTaskCreatePinnedToCore(
+    task_wifi_communication_service
+    ,  "Request from the server"
+    ,  1024*4  // Stack size
+    ,  NULL
+    ,  5  // Priority
+    ,  &wifi_communication_task 
+    ,  ARDUINO_RUNNING_CORE);
+
+  xTaskCreatePinnedToCore(
+    task_capturing_real_time
+    ,  "Request from the server"
+    ,  1024*6  // Stack size
+    ,  NULL
+    ,  5  // Priority
+    ,  &real_time_capturing_task 
+    ,  ARDUINO_RUNNING_CORE);
+
+  #ifdef DEBUG_MODE
+  Serial.println(F("Threads Added"));
+  #endif
+  rgb.wifi_connected();
+}
+
+
+/// Put device in client-mode
+void start_client_mode()
+{
+  wifi.client_mode(check_wifi_reset_mode);
+  wifi.local_ip();
+  offline_mode = false;
+  /// Establishing MQTT Connection
+  mqtt.start(mqtt_host, mqtt_port,mqtt_callback);
+  mqtt.publish_status(get_status().c_str(),status);
+}
+
+/// Defining offline tasks
 void calling_offline_threads()
 {
   #ifdef DEBUG_MODE
@@ -158,7 +215,7 @@ void calling_offline_threads()
   #endif
   //*
   xTaskCreatePinnedToCore(
-    task_peripherals_handling
+    task_rgb_handling
     ,  "RGB and lighting"   // A name just for humans
     ,  4096  // This stack size can be checked & adjusted by reading the Stack Highwater
     ,  NULL
@@ -192,121 +249,6 @@ void calling_offline_threads()
 
 }
 
-
-///////// Wifi Modes /////////
-
-// Wifi acts as an access point
-void wifi_access_mode()
-{
-  // Put Wifi into Access mode
-  wifi.access_mode();
-  // Send web page with input fields to client
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-  {
-      request->send_P(200, "text/html", html_page);
-  });
-
-  // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
-  server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) 
-  {
-    String inputParam,inputParam2;
-    String SSID,Password;
-    // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
-    if (request->hasParam(PARAM_INPUT_1)) 
-    {
-      SSID = request->getParam(PARAM_INPUT_1)->value();
-      Password = request->getParam(PARAM_INPUT_2)->value();
-      inputParam = PARAM_INPUT_1;
-      inputParam2 = PARAM_INPUT_2;
-
-      // Writing SSID and Password on EEPROM
-      String authenticaiton  =(SSID+"\n"+Password+"\n");
-      e2prom.write(authenticaiton.c_str(),0);
-      e2prom.wifi_mode_write (CLIENT_MODE);
-    }
-    else 
-    {
-      SSID = "No message sent";
-      inputParam = "none";
-    }
-    //Serial.println(SSID+"\n"+Password);
-    serial_debug(SSID+"\n"+Password);
-    request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" 
-                                     + inputParam +""+inputParam2+ ") with value: " + SSID +" and "+ Password+ 
-                                     "<br><a href=\"/\">Return to Home Page</a>");
-    delay(3000); // Wait to settle system
-    ESP.restart();  // Automtically restarts system into client mode
-    
-  });
-  server.onNotFound(not_found);
-  server.begin();
-  
-}
-
-// Wifi acts as a client
-
-void wifi_client_mode ()
-{
-  // Adding offline threads: Motion Detection and Siren
-  calling_offline_threads();
-  
-  // Connecting to the WIFI Network
-  wifi.get_auth(e2prom.wifi_auth_read());
-  wifi_trying_to_connect();
-  
-  camera.camera_init(FRAMESIZE_XGA);
-  delay(10);
-
-  bool err = gpio_isr_handler_add(GPIO_NUM_13, &detectsMovement, (void *) 13);
-  if (err != ESP_OK)
-    //Serial.printf("handler add failed with error 0x%x \r\n", err);
-    printf_debug("handler add failed with error 0x%x \r\n", err);
-
-  err = gpio_set_intr_type(GPIO_NUM_13, GPIO_INTR_NEGEDGE);
-  if (err != ESP_OK)
-    //Serial.printf("set intr type failed with error 0x%x \r\n", err);
-    printf_debug("set intr type failed with error 0x%x \r\n", err);
-  
-
-  xTaskCreatePinnedToCore(
-    task_wifi_communication_service
-    ,  "Request from the server"
-    ,  1024*4  // Stack size
-    ,  NULL
-    ,  5  // Priority
-    ,  &wifi_communication_task 
-    ,  ARDUINO_RUNNING_CORE);
-
-  xTaskCreatePinnedToCore(
-    task_capturing_real_time
-    ,  "Request from the server"
-    ,  1024*6  // Stack size
-    ,  NULL
-    ,  5  // Priority
-    ,  &real_time_capturing_task 
-    ,  ARDUINO_RUNNING_CORE);
-
-  #ifdef DEBUG_MODE
-  Serial.println(F("Threads Added"));
-  #endif
-  rgb.wifi_connected();
-  
-}
-
-
-// Connecting to the local hotspot
-void wifi_trying_to_connect()
-{
-  
-  wifi.client_mode(check_wifi_reset_mode);
-  wifi.local_ip();
-  offline_mode = false;
-  // Establishing MQTT Connection
-  mqtt.start(mqtt_host, mqtt_port,mqtt_callback);
-  mqtt.publish_status(get_status().c_str(),status);
-  
-}
-
 // Reset to Go to Access Mode
 void loop()
 {
@@ -318,6 +260,8 @@ void loop()
 //////////////// Tasks definitions ///////////////////
 /*..................................................*/
 //////////////////////////////////////////////////////
+
+/// Check if user want to put the device in the access mode (to change credntials)
 void task_reset_device(void *pvParameters)  
 {
   (void) pvParameters;
@@ -327,19 +271,21 @@ void task_reset_device(void *pvParameters)
 
   check_wifi_reset_mode();
   vTaskDelete(NULL);
-
 }
 
-void task_peripherals_handling(void *pvParameters)  
+/// Defining multiple RGB actions for different scenarios 
+void task_rgb_handling(void *pvParameters)  
 {
   (void) pvParameters;
 
-
   for (;;)
   {
+    //// Simple fading alarm
+    /// User contrlled mode
     if(status.is_alarm_set&&status.is_hazard_beacon_set)
         rgb.siren_and_alarm();
 
+    /// PIR trigged mode
     else if(pir_trigged)
     {
       long cycle_time = xTaskGetTickCount()+cycle_to_alarm;
@@ -349,8 +295,9 @@ void task_peripherals_handling(void *pvParameters)
 
       rgb.on_off(OFF);
       vTaskDelay(1);
-      
     }
+
+    /// Default
     else
     {
       rgb.on_off(ON);
@@ -366,11 +313,12 @@ void task_buzzer_alarm(void *pvParameters)
 
   for (;;)
   {
-    /// If user acticate the alarm
+    //// Simple Buzzer alarm mode
+    /// User controlled mode
     if(status.is_alarm_set&&status.is_buzzer_set)
         peripheral.buzzer_cycle();
 
-    /// If PIR being trigged
+    /// PIR trigged mode
     else if(pir_trigged)
     {
       long cycle_time = xTaskGetTickCount()+cycle_to_alarm;
@@ -379,7 +327,7 @@ void task_buzzer_alarm(void *pvParameters)
           peripheral.buzzer_cycle();
       vTaskDelay(1);
     }
-    /// No event happens
+    /// Default
     else
     {
       peripheral.buzzer_off();
@@ -389,19 +337,21 @@ void task_buzzer_alarm(void *pvParameters)
   vTaskDelete(NULL);
 }
 
-// Counting the number of detection event
+/// PIR motion detection task
 void task_motion_counter(void *pvParameters)  
 {
   (void) pvParameters;
 
   for (;;)
   {
+    /// Online mode, by default
     if(!offline_mode)
     {
+      /// User controlled
       if(peripheral.pir_state()&&status.is_monitoring_set)
       {
         pir_trigged = true;
-        motion_counter++;
+        motion_counter++; /// Global variable to count the number of detections
         Serial.println("Event Counted: "+String(motion_counter));
         while(peripheral.pir_state())
         {
@@ -412,6 +362,7 @@ void task_motion_counter(void *pvParameters)
         
       }
     }
+    /// Offline mode
     else
     {
       if(peripheral.pir_state())
@@ -431,12 +382,14 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
   vTaskDelay(1000);
-  WiFi.scanNetworks();
+  
+  Serial.println("Scan done");
+  Serial.println("");
   while(true)
   {
     if(wifi.is_connected())
     { 
-
+      /// Default mode: User controlled mode
       if(!realtime_capturing_activated)
       {
         if(status.is_sending_status_continous_set)
@@ -466,8 +419,6 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
             mqtt.send_photo_RT(image_holder[i],image_size_holder[i]);
             free(image_holder[i]);
           }
-          //for(int i=0;i<30;i++)
-            //free(image_holder[i]);
           ready_to_send = false;
         }
         vTaskDelay(500);
@@ -502,11 +453,10 @@ void task_capturing_real_time(void *pvParameters)
     if(pir_trigged&&!ready_to_send&&!status.is_recording_set)
     {
       realtime_capturing_activated = true;
-      //pinMode(SETUP_PIN, OUTPUT);
+
       for(int i=0;i<30;i++)
       {
         camera_fb_t * fb = camera.capture();
-        //Serial.printf(". Image Num: %d",i+1);
         printf_debug("\nImage Num: %d",i+1);
         image_size_holder[i] = fb->len;
         image_holder[i] = (uint8_t*)ps_malloc(fb->len);
@@ -516,7 +466,6 @@ void task_capturing_real_time(void *pvParameters)
           ready_to_send = true;
         vTaskDelay(500);
       }
-      //pinMode(SETUP_PIN, INPUT);
     }
     else
     {
@@ -658,14 +607,14 @@ void check_wifi_reset_mode()
           #ifdef DEBUG_MODE
           Serial.println(F("Reset Activated"));
           #endif
-          /*
+          
           WiFi.disconnect();  // To be sure that wifi tasks will not interfere
           e2prom.wifi_mode_write (ACCESS_MODE);
           delay(100);
           esp_camera_deinit();
           delay(100);
           ESP.restart();
-          */
+          
         }
         delay(500);
       }
