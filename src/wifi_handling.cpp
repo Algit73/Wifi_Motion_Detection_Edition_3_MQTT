@@ -3,7 +3,6 @@
 
 
 AsyncWebServer server_hub(80);
-//e2prom_handling e2prom;
 e2prom_handling e22prom;
 const char* PARAM_SSID = "ssid";
 const char* PARAM_PASS = "password";

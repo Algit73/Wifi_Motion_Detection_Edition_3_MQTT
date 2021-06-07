@@ -11,7 +11,7 @@
 
 #include <functional>
 #define WIFI_RESET_CALLBACK std::function<void()> callback
-
+//
 const char html_hub_page [] PROGMEM = R"rawliteral(
         <!DOCTYPE HTML><html><head>
         <title>ESP Input Form</title>
