@@ -9,7 +9,7 @@ void e2prom_handling::init()
 {
   if (!EEPROM.begin(EEPROM_SIZE))
   {
-    Serial.println(F("failed to initialise EEPROM")); delay(1000000);
+    Serial.println(F("failed to initialise EEPROM")); delay(1000);
   }
 }
 
@@ -95,12 +95,8 @@ bool e2prom_handling::wifi_mode_read()
   Serial.print(F("WIFI Mode:")); Serial.println(mode);
 
   if(mode==CLIENT_MODE)
-  {
     return true;
-  }
   else
-  {
     return false;
-  }
   
 }

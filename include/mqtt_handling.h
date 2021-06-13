@@ -69,7 +69,6 @@ class mqtt_handling
         void publish_command(const char* Key, const char* Value);
         void publish_status(const char* status, system_status single_status);
         void loop();
-        void callback1(char* topic, byte* message, unsigned int length);
         void set_callback(MQTT_CALLBACK);
         bool send_photo ();
         void send_photo_RT(uint8_t * buf,size_t len);

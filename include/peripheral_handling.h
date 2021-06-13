@@ -5,7 +5,7 @@
 #define LED_BUILTIN     12
 #define SIREN_PIN       14
 #define RGB_TEST        15
-#define SETUP_PIN       16
+#define SETUP_PIN       13
 #define ON              true
 #define OFF             false
 

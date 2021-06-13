@@ -17,6 +17,16 @@ void wifi_handling::get_auth(wifi_authentications auth)
     this->auth = auth;
 }
 
+bool wifi_handling::get_mode()
+{
+    return e22prom.wifi_mode_read();
+}
+
+void wifi_handling::set_mode(const char* mode)
+{
+    e22prom.wifi_mode_write(mode);
+}
+
 
 
 void wifi_handling::access_mode(NOT_FOUND callback)

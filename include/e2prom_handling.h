@@ -18,7 +18,7 @@ class e2prom_handling
         void init();
 
     public:
-        void write(const char* string, int index);
+        void write(const char* string, int index_end);
         String read(int index_begin, int index_end);
         wifi_authentications wifi_auth_read(void);
         void wifi_mode_write (const char* mode);

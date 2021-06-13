@@ -57,7 +57,8 @@ const char wifiConfigurationSucceedPage [] PROGMEM = "<!DOCTYPE html><html lang=
 
 // Variables
 #define TIME_TO_CALL_OFF    20000
-#define cycle_to_alarm    20000
+#define ALARM_LENGTH      20000
+#define IMAGES_MAX_NUM      30
 
 // Post Configs
 #define POST_HEAD   "--SendingImage\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n"

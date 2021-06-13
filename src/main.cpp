@@ -4,13 +4,8 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
-
 #include <ArduinoJson.h>
-
-
-//#include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-
 #include <main.h>
 #include "driver/gpio.h"
 #include <PubSubClient.h>
@@ -21,16 +16,11 @@
 
 
 
-//AsyncWebServer server(80);
-
-
 // MQTT Configs
 const char* mqtt_host = "broker.hivemq.com";
 //const char* mqtt_host = "broker.emqx.io";
 const int mqtt_port = 1883;
 
-
-//WiFiClientSecure client; // A client for HTTPS
 
 wifi_handling wifi;
 
@@ -44,15 +34,9 @@ system_status status;
 uint8_t* image_holder[30];
 size_t image_size_holder[30];
 
-// Initializing EEPROM
-e2prom_handling e2prom;
-
-//Handling rgb functions;
+// Defining Handlers;
 rgb_handling rgb;
-
 peripheral_handling peripheral;
-
-
 
 /// JSON Doc for Receving Command and Sending Device's Status
 StaticJsonDocument<250> doc_status;
@@ -67,14 +51,13 @@ StaticJsonDocument<250> doc_status;
 
 #define DEBUG_MODE
 
-
-
 // Controling parameters
 bool volatile reset_activated = false; // A global variable to stop functionalities when user pushes the reset button
 bool volatile pir_trigged = false;   // A global variable to siganl if the PIR trigged
 bool offline_mode = true;   // A global variable to set the mode of device into offline
 bool volatile realtime_capturing_activated = false;
 bool volatile ready_to_send = false;
+bool volatile is_tasks_defined = false;
 int motion_counter = 0;   // A global counter to count the number of times PIR trigged
 
 /// Tasks Handlers
@@ -139,7 +122,7 @@ void setup()
   #endif
   
   // Finding out the operational mode
-  if(e2prom.wifi_mode_read())
+  if(wifi.get_mode())
     wifi_client_mode();
   else
     wifi.access_mode(on_page_not_found);
@@ -154,6 +137,7 @@ void setup()
 void wifi_client_mode ()
 {
   /// Adding offline threads: Motion Detection and Siren
+  is_tasks_defined = false;
   calling_offline_threads();
   
   /// Start client mode
@@ -192,6 +176,7 @@ void wifi_client_mode ()
   #ifdef DEBUG_MODE
   Serial.println(F("Threads Added"));
   #endif
+  is_tasks_defined = true;
   rgb.wifi_connected();
 }
 
@@ -213,7 +198,7 @@ void calling_offline_threads()
   #ifdef DEBUG_MODE
   Serial.println(F("Offline Threads Begin"));
   #endif
-  //*
+  
   xTaskCreatePinnedToCore(
     task_rgb_handling
     ,  "RGB and lighting"   // A name just for humans
@@ -222,7 +207,7 @@ void calling_offline_threads()
     ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  NULL 
     ,  ARDUINO_RUNNING_CORE);
-  //*/
+  
   xTaskCreatePinnedToCore(
     task_motion_counter
     ,  "Counting the detection"
@@ -241,6 +226,7 @@ void calling_offline_threads()
       ,  3  // Priority
       ,  NULL 
       ,  ARDUINO_RUNNING_CORE);
+      
       
 
     #ifdef DEBUG_MODE
@@ -280,15 +266,18 @@ void task_rgb_handling(void *pvParameters)
 
   for (;;)
   {
+    
     //// Simple fading alarm
     /// User contrlled mode
     if(status.is_alarm_set&&status.is_hazard_beacon_set)
         rgb.siren_and_alarm();
 
+    
     /// PIR trigged mode
     else if(pir_trigged)
     {
-      long cycle_time = xTaskGetTickCount()+cycle_to_alarm;
+      Serial.println(F("RGB PIR trigged"));
+      long cycle_time = xTaskGetTickCount() + ALARM_LENGTH; 
       while(cycle_time>xTaskGetTickCount())
         if(status.is_hazard_beacon_set)
           rgb.siren_and_alarm();
@@ -296,6 +285,7 @@ void task_rgb_handling(void *pvParameters)
       rgb.on_off(OFF);
       vTaskDelay(1);
     }
+    
 
     /// Default
     else
@@ -303,6 +293,9 @@ void task_rgb_handling(void *pvParameters)
       rgb.on_off(ON);
       vTaskDelay(100);
     }
+    
+   //vTaskDelay(50);
+
 
   }
 }
@@ -313,26 +306,32 @@ void task_buzzer_alarm(void *pvParameters)
 
   for (;;)
   {
+    
     //// Simple Buzzer alarm mode
     /// User controlled mode
     if(status.is_alarm_set&&status.is_buzzer_set)
         peripheral.buzzer_cycle();
 
+    
     /// PIR trigged mode
     else if(pir_trigged)
     {
-      long cycle_time = xTaskGetTickCount()+cycle_to_alarm;
+      Serial.println(F("BUZ PIR trigged"));
+      long cycle_time = xTaskGetTickCount() + ALARM_LENGTH;
       while(cycle_time>xTaskGetTickCount())
         if(status.is_buzzer_set)
           peripheral.buzzer_cycle();
       vTaskDelay(1);
     }
+    
     /// Default
     else
     {
       peripheral.buzzer_off();
-      vTaskDelay(200);
+      vTaskDelay(100);
     }
+    
+   //vTaskDelay(50);
   }
   vTaskDelete(NULL);
 }
@@ -365,7 +364,7 @@ void task_motion_counter(void *pvParameters)
     /// Offline mode
     else
     {
-      if(peripheral.pir_state())
+      if(peripheral.pir_state()&&is_tasks_defined)
       {
         pir_trigged = true;
         while(peripheral.pir_state());
@@ -411,7 +410,7 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       {
         if(ready_to_send)//&&!reset_activated)
         {
-          for(int i=0;i<30;i++)
+          for(int i=0;i<IMAGES_MAX_NUM;i++)
           {
             //if(reset_activated)
              // break;
@@ -455,7 +454,7 @@ void task_capturing_real_time(void *pvParameters)
     {
       realtime_capturing_activated = true;
 
-      for(int i=0;i<30;i++)
+      for(int i=0;i<IMAGES_MAX_NUM;i++)
       {
         camera_fb_t * fb = camera.capture();
         printf_debug("\nImage Num: %d",i+1);
@@ -587,12 +586,16 @@ String get_status()
 // Check if user wants to reset the wifi
 void check_wifi_reset_mode()
 {
+  //Serial.println(F("check_wifi_reset_mode"));
   if(!peripheral.setup_pin_state())
     while(!peripheral.setup_pin_state())  // This Ensures the Stability of wifi
     { 
-      vTaskSuspend(real_time_capturing_task);
-      vTaskSuspend(wifi_communication_task);
-      vTaskSuspend(motion_counter_task);
+      if(is_tasks_defined)
+      {
+        vTaskSuspend(real_time_capturing_task);
+        vTaskSuspend(wifi_communication_task);
+        vTaskSuspend(motion_counter_task);
+      }
 
       peripheral.builtin_led_on();
       long timer_counter = xTaskGetTickCount()+3000; // Three seconds pushing
@@ -610,7 +613,7 @@ void check_wifi_reset_mode()
           #endif
           
           WiFi.disconnect();  // To be sure that wifi tasks will not interfere
-          e2prom.wifi_mode_write (ACCESS_MODE);
+          wifi.set_mode(ACCESS_MODE);
           delay(100);
           esp_camera_deinit();
           delay(100);
@@ -619,10 +622,12 @@ void check_wifi_reset_mode()
         }
         delay(500);
       }
-
-      vTaskResume(real_time_capturing_task);
-      vTaskResume(wifi_communication_task);
-      vTaskResume(motion_counter_task);
+      if(is_tasks_defined)
+      {
+        vTaskResume(real_time_capturing_task);
+        vTaskResume(wifi_communication_task);
+        vTaskResume(motion_counter_task);
+      }
       //reset_activated = false;  // Enables GET and POST
     }
   

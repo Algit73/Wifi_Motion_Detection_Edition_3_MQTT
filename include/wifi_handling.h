@@ -40,6 +40,8 @@ class wifi_handling
 
     public:
         wifi_handling();
+        bool get_mode();
+        void set_mode(const char* mode);
         void client_mode (WIFI_RESET_CALLBACK);
         void access_mode(NOT_FOUND callback);
         void trying_connection(void);

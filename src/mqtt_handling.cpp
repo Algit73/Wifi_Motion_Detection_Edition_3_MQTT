@@ -156,8 +156,6 @@ void mqtt_handling::send_photo_RT(uint8_t * buf,size_t len)
 void mqtt_handling::set_callback(MQTT_CALLBACK_SIGNATURE) 
 {
   client_mqtt.setCallback(callback);
-  //this->callback = callback;
-  //return ;
 }
 
 
