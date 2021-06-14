@@ -1,6 +1,9 @@
 #include "mqtt_handling.h"
 #include <ArduinoJson.h>
+#include <e2prom_handling.h>
 
+
+e2prom_handling e2_prom;
 
 
 mqtt_handling::mqtt_handling(PubSubClient &client_mqtt)
@@ -12,6 +15,36 @@ void mqtt_handling::start(const char* host, const int port,MQTT_CALLBACK_SIGNATU
 {
   client_mqtt.setServer(host, port);
   client_mqtt.setCallback(callback);
+  init();
+  
+}
+
+void mqtt_handling::init()
+{
+  mqtt_token = e2_prom.read(80,85);
+  String sub_string = mqtt_token + "/sub/";
+  String pub_string = mqtt_token + "/pub/";
+
+  sub_service.alarm = sub_string + "alarm";
+  sub_service.beacon = sub_string + "beacon";
+  sub_service.buzzer = sub_string + "buzzer";
+  sub_service.continous = sub_string + "continous";
+  sub_service.monitoring = sub_string + "monitoring";
+  sub_service.recording = sub_string + "recording";
+  sub_service.resolution = sub_string + "resolution";
+  sub_service.token = sub_string + "token";
+
+  pub_service.alarm = pub_string + "alarm";
+  pub_service.beacon = pub_string + "beacon";
+  pub_service.buzzer = pub_string + "buzzer";
+  pub_service.continous = pub_string + "continous";
+  pub_service.monitoring = pub_string + "monitoring";
+  pub_service.recording = pub_string + "recording";
+  pub_service.resolution = pub_string + "resolution";
+  pub_service.status = pub_string + "status";
+  pub_service.token = pub_string + "token";
+  pub_image = pub_string + "image";
+  pub_move = pub_string + "move";
 }
 
 
@@ -28,19 +61,8 @@ void mqtt_handling::reconnect()
     if (client_mqtt.connect(MQTT_ID)) 
     {
       Serial.println(F("connected"));
-      // Subscribe
-      client_mqtt.subscribe(MQTT_SUBSCRIBE_COMMAND);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_REC);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_ALARM);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_BEACON);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_MON);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_LIGHT);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_RES);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_BUZZER);
-      client_mqtt.subscribe(MQTT_SUB_COM_SET_CONT);
-
-      //client_mqtt.loop();
-      //client_mqtt.publish(MQTT_SERVICE_STATUS,"Device Connected");
+      // Subscribes
+      subscribe();
     } 
     else 
     {
@@ -80,17 +102,15 @@ void mqtt_handling::publish_command(const char* key, const char* value)
 void mqtt_handling::publish_status(const char* status, system_status single_status)
 {
   //loop();
-  publish_command(MQTT_SERVICE_STATUS,status);
-
-  publish_command(MQTT_PUB_STAT_IS_RES,String(single_status.camera_resolution).c_str());
-  publish_command(MQTT_PUB_STAT_IS_ALARM,String(single_status.is_alarm_set).c_str());
-  publish_command(MQTT_PUB_STAT_IS_BUZZER,String(single_status.is_buzzer_set).c_str());
-  publish_command(MQTT_PUB_STAT_IS_BEACON,String(single_status.is_hazard_beacon_set).c_str());
-  publish_command(MQTT_PUB_STAT_IS_LIGHT,String(single_status.is_light_set).c_str());
-  publish_command(MQTT_PUB_STAT_IS_MON,String(single_status.is_monitoring_set).c_str());
-  publish_command(MQTT_PUB_STAT_IS_REC,String(single_status.is_recording_set).c_str());
-  publish_command(MQTT_PUB_STAT_IS_CONT,String(single_status.is_sending_status_continous_set).c_str());
-
+  publish_command(pub_service.status.c_str(),status);
+  publish_command(pub_service.resolution.c_str(),String(single_status.camera_resolution).c_str());
+  publish_command(pub_service.alarm.c_str(),String(single_status.is_alarm_set).c_str());
+  publish_command(pub_service.buzzer.c_str(),String(single_status.is_buzzer_set).c_str());
+  publish_command(pub_service.beacon.c_str(),String(single_status.is_hazard_beacon_set).c_str());
+  publish_command(pub_service.monitoring.c_str(),String(single_status.is_monitoring_set).c_str());
+  publish_command(pub_service.recording.c_str(),String(single_status.is_recording_set).c_str());
+  publish_command(pub_service.continous.c_str(),String(single_status.is_sending_status_continous_set).c_str());
+  publish_command(pub_service.token.c_str(),mqtt_token.c_str());
 }
 
 bool mqtt_handling::send_photo() 
@@ -158,6 +178,104 @@ void mqtt_handling::set_callback(MQTT_CALLBACK_SIGNATURE)
   client_mqtt.setCallback(callback);
 }
 
+mqtt_sub mqtt_handling::get_sub_service() 
+{
+  return sub_service;
+}
+
+mqtt_pub mqtt_handling::get_pub_service() 
+{
+  return pub_service;
+}
+
+void mqtt_handling::disconnect() 
+{
+  client_mqtt.disconnect();
+}
+
+void mqtt_handling::get_status(String topic, String message, system_status &status, camera_handling &camera)
+{
+  if(topic.equals(sub_service.continous))
+  {
+    status.is_sending_status_continous_set = message.toInt();
+    publish_command(pub_service.continous.c_str()
+                          ,message.c_str());
+  }
+  else if(topic.equals(sub_service.beacon))
+  {
+    status.is_hazard_beacon_set = message.toInt();
+    publish_command(pub_service.beacon.c_str()
+                          ,message.c_str());
+  }
+  else if(topic.equals(sub_service.buzzer))
+  {
+    status.is_buzzer_set = message.toInt();
+    publish_command(pub_service.buzzer.c_str()
+                          ,message.c_str());
+  }
+  else if(topic.equals(sub_service.alarm))
+  {
+    status.is_alarm_set = message.toInt();
+    publish_command(pub_service.alarm.c_str()
+                          ,message.c_str());
+  }
+  else if(topic.equals(sub_service.monitoring))
+  {
+    status.is_monitoring_set = message.toInt();
+    publish_command(pub_service.monitoring.c_str()
+                          ,message.c_str());
+  }
+  else if(topic.equals(sub_service.recording))
+  {
+    status.is_recording_set = message.toInt();
+    publish_command(pub_service.recording.c_str()
+                          ,message.c_str());
+  }
+
+  else if(topic.equals(sub_service.token))
+  {
+    e2_prom.write(message.c_str(),80);
+    status.token = message;
+    publish_command(pub_service.token.c_str()
+                          ,message.c_str());
+
+    unsubscribe();
+    disconnect();
+    init();
+    reconnect();
+  }
+
+  else if(topic.equals(sub_service.resolution))
+  {
+      status.camera_resolution = message.toInt();
+      camera.change_resolution(status.camera_resolution);
+      publish_command(pub_service.resolution.c_str()
+                            ,message.c_str());
+  }
+  
+}
 
 
+void mqtt_handling::subscribe()
+{
+  client_mqtt.subscribe(sub_service.recording.c_str());
+  client_mqtt.subscribe(sub_service.alarm.c_str());
+  client_mqtt.subscribe(sub_service.beacon.c_str());
+  client_mqtt.subscribe(sub_service.monitoring.c_str());
+  client_mqtt.subscribe(sub_service.resolution.c_str());
+  client_mqtt.subscribe(sub_service.buzzer.c_str());
+  client_mqtt.subscribe(sub_service.continous.c_str());
+  client_mqtt.subscribe(sub_service.token.c_str());
+}
 
+void mqtt_handling::unsubscribe()
+{
+  client_mqtt.unsubscribe(sub_service.alarm.c_str());
+  client_mqtt.unsubscribe(sub_service.beacon.c_str());
+  client_mqtt.unsubscribe(sub_service.buzzer.c_str());
+  client_mqtt.unsubscribe(sub_service.continous.c_str());
+  client_mqtt.unsubscribe(sub_service.monitoring.c_str());
+  client_mqtt.unsubscribe(sub_service.recording.c_str());
+  client_mqtt.unsubscribe(sub_service.resolution.c_str());
+  client_mqtt.unsubscribe(sub_service.token.c_str());
+}

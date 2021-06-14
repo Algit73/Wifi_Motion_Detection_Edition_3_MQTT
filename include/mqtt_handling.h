@@ -5,6 +5,7 @@
 #include "Client.h"
 #include "Stream.h"
 #include <WiFi.h>
+#include <camera_handling.h>
 
 #define MQTT_ID                     "HuHoScSy"
 #define MQTT_DEVICE_ID              "utd_n1/"
@@ -42,7 +43,35 @@ struct system_status
     bool is_sending_status_continous_set = false; 
     bool is_alarm_set = false;
     int camera_resolution = 8;
+    String token;
 };
+
+struct mqtt_pub
+{
+    String monitoring;
+    String recording;
+    String beacon;
+    String buzzer;
+    String alarm;
+    String resolution;
+    String continous;
+    String status;
+    String token;
+};
+
+struct mqtt_sub
+{
+    String monitoring;
+    String recording;
+    String beacon;
+    String buzzer;
+    String alarm;
+    String resolution;
+    String continous;
+    String token;
+};
+
+
 
 #include <functional>
 #define MQTT_CALLBACK std::function<void(char*, uint8_t*, unsigned int)> callback
@@ -55,11 +84,17 @@ class mqtt_handling
     private:
 
         PubSubClient client_mqtt;
-        
-        //MQTT_CALLBACK_SIGNATURE;
+        String mqtt_token;
+        String pub_image;
+        String pub_move;
+        mqtt_pub pub_service;
+        mqtt_sub sub_service;
+        void init(void);
         String get_status();
         void check_connection();
         void reconnect();
+        void subscribe();
+        void unsubscribe();
         
 
     public:
@@ -68,8 +103,12 @@ class mqtt_handling
         void start(const char* host, const int port, MQTT_CALLBACK);
         void publish_command(const char* Key, const char* Value);
         void publish_status(const char* status, system_status single_status);
+        void disconnect(void);
         void loop();
         void set_callback(MQTT_CALLBACK);
         bool send_photo ();
         void send_photo_RT(uint8_t * buf,size_t len);
+        void get_status(String topic, String message, system_status &status, camera_handling &camera);
+        mqtt_sub get_sub_service();
+        mqtt_pub get_pub_service();
 };

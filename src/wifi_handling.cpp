@@ -3,7 +3,7 @@
 
 
 AsyncWebServer server_hub(80);
-e2prom_handling e22prom;
+e2prom_handling e2prom;
 const char* PARAM_SSID = "ssid";
 const char* PARAM_PASS = "password";
 
@@ -19,12 +19,12 @@ void wifi_handling::get_auth(wifi_authentications auth)
 
 bool wifi_handling::get_mode()
 {
-    return e22prom.wifi_mode_read();
+    return e2prom.wifi_mode_read();
 }
 
 void wifi_handling::set_mode(const char* mode)
 {
-    e22prom.wifi_mode_write(mode);
+    e2prom.wifi_mode_write(mode);
 }
 
 
@@ -56,8 +56,8 @@ void wifi_handling::access_mode(NOT_FOUND callback)
 
         // Writing SSID and Password on EEPROM
         String authenticaiton  =(SSID+"\n"+Password+"\n");
-        e22prom.write(authenticaiton.c_str(),0);
-        e22prom.wifi_mode_write (CLIENT_MODE);
+        e2prom.write(authenticaiton.c_str(),0);
+        e2prom.wifi_mode_write (CLIENT_MODE);
         }
         else 
         {
@@ -81,7 +81,7 @@ void wifi_handling::access_mode(NOT_FOUND callback)
 
 void wifi_handling::client_mode(WIFI_RESET_CALLBACK)
 {
-    auth = e22prom.wifi_auth_read();
+    auth = e2prom.wifi_auth_read();
     WiFi.begin(auth.ssid.c_str(),auth.password.c_str());
     //WiFi.begin("Pixel4AL","1234567890");
     Serial.print(F("Connecting to: "));

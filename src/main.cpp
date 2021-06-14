@@ -11,7 +11,7 @@
 #include <PubSubClient.h>
 #include "mqtt_handling.h"
 #include "wifi_handling.h"
-#include "camera_handling.h"
+//#include "camera_handling.h"
 #include "peripheral_handling.h"
 
 
@@ -40,6 +40,7 @@ peripheral_handling peripheral;
 
 /// JSON Doc for Receving Command and Sending Device's Status
 StaticJsonDocument<250> doc_status;
+
 
 // A just in case expression: can be removed
 // Choosing the Core to Run FreeRTOS
@@ -120,6 +121,11 @@ void setup()
   #ifdef DEBUG_MODE
   Serial.println(F("Run"));
   #endif
+
+  /// Uncomment to initialize E2Prom
+  //e2prom_handling e2;
+  //e2.write("utd_n1",80);
+  
   
   // Finding out the operational mode
   if(wifi.get_mode())
@@ -130,6 +136,7 @@ void setup()
   #ifdef DEBUG_MODE
   Serial.println(F("OK"));
   #endif
+  
 }
 
 
@@ -507,56 +514,13 @@ void mqtt_callback(char* topic, byte* message, unsigned int length)
   }
   Serial.println();
 
-  
   if(message_string.equals(MQTT_SUBSCRIBE_SEND_STATUS))
   {
     mqtt.publish_status(get_status().c_str(),status);
     return;
   }
 
-  if(topic_string.equals(MQTT_SUB_COM_SET_CONT))
-  {
-    status.is_sending_status_continous_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_CONT,message_string.c_str());
-  }
-  else if(topic_string.equals(MQTT_SUB_COM_SET_BEACON))
-  {
-    status.is_hazard_beacon_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_BEACON,message_string.c_str());
-  }
-  else if(topic_string.equals(MQTT_SUB_COM_SET_BUZZER))
-  {
-    status.is_buzzer_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_BUZZER,message_string.c_str());
-  }
-  else if(topic_string.equals(MQTT_SUB_COM_SET_ALARM))
-  {
-    status.is_alarm_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_ALARM,message_string.c_str());
-  }
-  else if(topic_string.equals(MQTT_SUB_COM_SET_LIGHT))
-  {
-    status.is_light_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_LIGHT,message_string.c_str());
-  }
-  else if(topic_string.equals(MQTT_SUB_COM_SET_MON))
-  {
-    status.is_monitoring_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_MON,message_string.c_str());
-  }
-  else if(topic_string.equals(MQTT_SUB_COM_SET_REC))
-  {
-    status.is_recording_set = message_string.toInt();
-    mqtt.publish_command(MQTT_PUB_STAT_IS_REC,message_string.c_str());
-  }
-  else if(topic_string.equals(MQTT_SUB_COM_SET_RES))
-  {
-    status.camera_resolution = message_string.toInt();
-    camera.change_resolution(status.camera_resolution);
-    mqtt.publish_command(MQTT_PUB_STAT_IS_RES,message_string.c_str());
-  }
-  
-
+ mqtt.get_status(topic_string, message_string, status, camera);
 }
 
 ///////////////////////////////////////////////////
@@ -618,7 +582,6 @@ void check_wifi_reset_mode()
           esp_camera_deinit();
           delay(100);
           ESP.restart();
-          
         }
         delay(500);
       }
@@ -630,5 +593,4 @@ void check_wifi_reset_mode()
       }
       //reset_activated = false;  // Enables GET and POST
     }
-  
 }
