@@ -11,7 +11,6 @@
 #include <PubSubClient.h>
 #include "mqtt_handling.h"
 #include "wifi_handling.h"
-//#include "camera_handling.h"
 #include "peripheral_handling.h"
 
 
@@ -111,7 +110,6 @@ void printf_debug(String string, T msg)
 }
 
 
-
 // the setup function runs once when you press reset or power the board
 void setup() 
 {
@@ -121,13 +119,8 @@ void setup()
   #ifdef DEBUG_MODE
   Serial.println(F("Run"));
   #endif
-
-  /// Uncomment to initialize E2Prom
-  //e2prom_handling e2;
-  //e2.write("utd_n1",80);
   
-  
-  // Finding out the operational mode
+  /// Finding out the operational mode
   if(wifi.get_mode())
     wifi_client_mode();
   else
@@ -180,13 +173,21 @@ void wifi_client_mode ()
     ,  &real_time_capturing_task 
     ,  ARDUINO_RUNNING_CORE);
 
+    xTaskCreatePinnedToCore(
+    task_check_mqtt_token
+    ,  "Request from the server"
+    ,  1024  // Stack size
+    ,  NULL
+    ,  3  // Priority
+    ,  &real_time_capturing_task 
+    ,  ARDUINO_RUNNING_CORE);
+
   #ifdef DEBUG_MODE
   Serial.println(F("Threads Added"));
   #endif
   is_tasks_defined = true;
   rgb.wifi_connected();
 }
-
 
 /// Put device in client-mode
 void start_client_mode()
@@ -196,7 +197,9 @@ void start_client_mode()
   offline_mode = false;
   /// Establishing MQTT Connection
   mqtt.start(mqtt_host, mqtt_port,mqtt_callback);
-  mqtt.publish_status(get_status().c_str(),status);
+  //mqtt.publish_status(get_status().c_str(),status);
+  mqtt.publish_command(MQTT_PUB_SET_TOKEN,MQTT_DEVICE_ID);
+
 }
 
 /// Defining offline tasks
@@ -224,7 +227,6 @@ void calling_offline_threads()
     ,  &motion_counter_task 
     ,  ARDUINO_RUNNING_CORE);
 
-    
     xTaskCreatePinnedToCore(
       task_buzzer_alarm
       ,  "Buzzer Controller"
@@ -233,8 +235,6 @@ void calling_offline_threads()
       ,  3  // Priority
       ,  NULL 
       ,  ARDUINO_RUNNING_CORE);
-      
-      
 
     #ifdef DEBUG_MODE
     Serial.println(F("Offline Threads End"));
@@ -279,7 +279,6 @@ void task_rgb_handling(void *pvParameters)
     if(status.is_alarm_set&&status.is_hazard_beacon_set)
         rgb.siren_and_alarm();
 
-    
     /// PIR trigged mode
     else if(pir_trigged)
     {
@@ -300,10 +299,6 @@ void task_rgb_handling(void *pvParameters)
       rgb.on_off(ON);
       vTaskDelay(100);
     }
-    
-   //vTaskDelay(50);
-
-
   }
 }
 
@@ -383,11 +378,25 @@ void task_motion_counter(void *pvParameters)
   }
 }
 
+/// Double checking if token received correctly
+void task_check_mqtt_token(void *pvParameters)
+{
+  (void) pvParameters;
+  vTaskDelay(3000);
+  Serial.println(F("Receiving Token"));
+  while(!mqtt.token_received())
+  {
+    mqtt.publish_command(MQTT_PUB_SET_TOKEN,MQTT_DEVICE_ID);
+    vTaskDelay(2000);
+  }
+  Serial.println(F("Token Received"));
+  vTaskDelete(NULL);
+}
+
 
 void task_wifi_communication_service(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
-  vTaskDelay(1000);
   
   Serial.println("Scan done");
   Serial.println("");
@@ -395,15 +404,10 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
   {
     if(wifi.is_connected())
     { 
-      /// Default mode: User controlled mode
-      //
       if(!realtime_capturing_activated)
       {
         if(status.is_sending_status_continous_set)
-        {
-          mqtt.publish_status(get_status().c_str(),status);
-          //Serial.println("");
-        }
+        {mqtt.publish_status(get_status().c_str(),status);}
 
         // Sending images on demand
         if(status.is_recording_set)
@@ -419,8 +423,6 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
         {
           for(int i=0;i<IMAGES_MAX_NUM;i++)
           {
-            //if(reset_activated)
-             // break;
             if(status.is_sending_status_continous_set)
               mqtt.publish_status(get_status().c_str(),status);
             mqtt.send_photo_RT(image_holder[i],image_size_holder[i]);
@@ -438,6 +440,7 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       Serial.println(F("WiFi Disconnected"));
       offline_mode = true;
       //wifi_trying_to_connect();
+      ///TODO: needs modifications
       WiFi.reconnect();
       while (WiFi.status() != WL_CONNECTED)
       {
@@ -591,6 +594,5 @@ void check_wifi_reset_mode()
         vTaskResume(wifi_communication_task);
         vTaskResume(motion_counter_task);
       }
-      //reset_activated = false;  // Enables GET and POST
     }
 }

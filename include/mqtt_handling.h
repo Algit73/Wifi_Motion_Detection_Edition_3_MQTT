@@ -8,7 +8,11 @@
 #include <camera_handling.h>
 
 #define MQTT_ID                     "HuHoScSy"
-#define MQTT_DEVICE_ID              "utd_n1/"
+#define MQTT_DEVICE_ID              "123a1df23fdsa12zxcv3h1re23"
+#define MQTT_SUB_SET_TOKEN          "HSHYR_" MQTT_DEVICE_ID "/setToken"
+#define MQTT_PUB_SET_TOKEN          "HSHYR_register"
+
+
 #define MQTT_SERVICE_STATUS         MQTT_DEVICE_ID "system_status"
 #define MQTT_SUBSCRIBE_COMMAND      MQTT_DEVICE_ID "system_command"
 #define MQTT_SUBSCRIBE_SEND_STATUS  MQTT_DEVICE_ID "send_status"
@@ -57,6 +61,8 @@ struct mqtt_pub
     String continous;
     String status;
     String token;
+    String image;
+    String move;
 };
 
 struct mqtt_sub
@@ -84,9 +90,8 @@ class mqtt_handling
     private:
 
         PubSubClient client_mqtt;
+        bool is_token_received = false;
         String mqtt_token;
-        String pub_image;
-        String pub_move;
         mqtt_pub pub_service;
         mqtt_sub sub_service;
         void init(void);
@@ -105,6 +110,7 @@ class mqtt_handling
         void publish_status(const char* status, system_status single_status);
         void disconnect(void);
         void loop();
+        bool token_received();
         void set_callback(MQTT_CALLBACK);
         bool send_photo ();
         void send_photo_RT(uint8_t * buf,size_t len);

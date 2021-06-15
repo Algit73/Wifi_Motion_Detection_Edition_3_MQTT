@@ -25,6 +25,7 @@ void task_siren_alarm( void *pvParameters );
 void task_buzzer_alarm( void *pvParameters );
 void task_motion_counter( void *pvParameters );
 void task_reset_device( void *pvParameters );
+void task_check_mqtt_token( void *pvParameters );
 void wifi_client_mode (void);
 void wifi_access_mode (void);
 void start_client_mode(void);

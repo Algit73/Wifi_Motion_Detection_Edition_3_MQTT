@@ -7,21 +7,21 @@ e2prom_handling e2_prom;
 
 
 mqtt_handling::mqtt_handling(PubSubClient &client_mqtt)
-{
-  this->client_mqtt = client_mqtt;
-}
+{this->client_mqtt = client_mqtt;}
 
 void mqtt_handling::start(const char* host, const int port,MQTT_CALLBACK_SIGNATURE)
 {
+  init();
   client_mqtt.setServer(host, port);
   client_mqtt.setCallback(callback);
-  init();
+  mqtt_token = MQTT_DEVICE_ID;
+  
   
 }
 
 void mqtt_handling::init()
 {
-  mqtt_token = e2_prom.read(80,85);
+  //mqtt_token = e2_prom.read(80,85);
   String sub_string = mqtt_token + "/sub/";
   String pub_string = mqtt_token + "/pub/";
 
@@ -34,6 +34,7 @@ void mqtt_handling::init()
   sub_service.resolution = sub_string + "resolution";
   sub_service.token = sub_string + "token";
 
+  
   pub_service.alarm = pub_string + "alarm";
   pub_service.beacon = pub_string + "beacon";
   pub_service.buzzer = pub_string + "buzzer";
@@ -43,8 +44,13 @@ void mqtt_handling::init()
   pub_service.resolution = pub_string + "resolution";
   pub_service.status = pub_string + "status";
   pub_service.token = pub_string + "token";
-  pub_image = pub_string + "image";
-  pub_move = pub_string + "move";
+  pub_service.image = pub_string + "image";
+  pub_service.move = pub_string + "move";
+
+  Serial.print("PUB: ");
+  Serial.println(pub_service.alarm);
+  Serial.print("SUB: ");
+  Serial.println(sub_service.alarm);
 }
 
 
@@ -93,15 +99,11 @@ void mqtt_handling::loop()
 void mqtt_handling::publish_command(const char* key, const char* value)
 {
     loop();
-    //Serial.print(key);
-    //Serial.print(": ");
-    //Serial.println(value);
     client_mqtt.publish(key,value);
 }
 
 void mqtt_handling::publish_status(const char* status, system_status single_status)
 {
-  //loop();
   publish_command(pub_service.status.c_str(),status);
   publish_command(pub_service.resolution.c_str(),String(single_status.camera_resolution).c_str());
   publish_command(pub_service.alarm.c_str(),String(single_status.is_alarm_set).c_str());
@@ -124,7 +126,7 @@ bool mqtt_handling::send_photo()
   if (fb->len) // send only images with size >0
   {
     //if (client_mqtt.beginPublish("test_loc/esp32-cam/pic_p1", fb->len + sizeof(long), false))
-    if (client_mqtt.beginPublish(MQTT_PUB_IMAGE, fb->len + sizeof(long), false))
+    if (client_mqtt.beginPublish(pub_service.image.c_str(), fb->len + sizeof(long), false))
     {
       // send image data + millis()
       unsigned long m = millis();  
@@ -153,7 +155,7 @@ void mqtt_handling::send_photo_RT(uint8_t * buf,size_t len)
   if (len) // send only images with size >0
   {
     //if (client_mqtt.beginPublish("test_loc/esp32-cam/pic_p1", len + sizeof(long), false))
-    if (client_mqtt.beginPublish(MQTT_PUB_IMAGE, len + sizeof(long), false))
+    if (client_mqtt.beginPublish(pub_service.image.c_str(), len + sizeof(long), false))
     {
       // send image data + millis()
       unsigned long m = millis();  
@@ -169,9 +171,7 @@ void mqtt_handling::send_photo_RT(uint8_t * buf,size_t len)
     }
   }
 
-  
 }
-
 
 void mqtt_handling::set_callback(MQTT_CALLBACK_SIGNATURE) 
 {
@@ -232,10 +232,11 @@ void mqtt_handling::get_status(String topic, String message, system_status &stat
                           ,message.c_str());
   }
 
-  else if(topic.equals(sub_service.token))
+  else if(topic.equals(MQTT_SUB_SET_TOKEN))
   {
-    e2_prom.write(message.c_str(),80);
+    mqtt_token = "HSHYR_" + message;
     status.token = message;
+    is_token_received = true;
     publish_command(pub_service.token.c_str()
                           ,message.c_str());
 
@@ -252,12 +253,12 @@ void mqtt_handling::get_status(String topic, String message, system_status &stat
       publish_command(pub_service.resolution.c_str()
                             ,message.c_str());
   }
-  
 }
-
 
 void mqtt_handling::subscribe()
 {
+  if(!is_token_received)
+    client_mqtt.subscribe(MQTT_SUB_SET_TOKEN);
   client_mqtt.subscribe(sub_service.recording.c_str());
   client_mqtt.subscribe(sub_service.alarm.c_str());
   client_mqtt.subscribe(sub_service.beacon.c_str());
@@ -270,6 +271,8 @@ void mqtt_handling::subscribe()
 
 void mqtt_handling::unsubscribe()
 {
+  if(is_token_received)
+    client_mqtt.unsubscribe(MQTT_SUB_SET_TOKEN);
   client_mqtt.unsubscribe(sub_service.alarm.c_str());
   client_mqtt.unsubscribe(sub_service.beacon.c_str());
   client_mqtt.unsubscribe(sub_service.buzzer.c_str());
@@ -279,3 +282,6 @@ void mqtt_handling::unsubscribe()
   client_mqtt.unsubscribe(sub_service.resolution.c_str());
   client_mqtt.unsubscribe(sub_service.token.c_str());
 }
+
+bool mqtt_handling::token_received()
+{return is_token_received;}
