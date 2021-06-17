@@ -33,6 +33,7 @@ void mqtt_handling::init()
   sub_service.recording = sub_string + "recording";
   sub_service.resolution = sub_string + "resolution";
   sub_service.token = sub_string + "token";
+  sub_service.status = sub_string + "status";
 
   
   pub_service.alarm = pub_string + "alarm";
@@ -102,9 +103,40 @@ void mqtt_handling::publish_command(const char* key, const char* value)
     client_mqtt.publish(key,value);
 }
 
-void mqtt_handling::publish_status(const char* status, system_status single_status)
+void mqtt_handling::publish_single_status(int index, system_status single_status)
 {
-  publish_command(pub_service.status.c_str(),status);
+  switch (index)
+  {
+    case MONITORING_STATUS: publish_command(pub_service.monitoring.c_str()
+                                          ,String(single_status.is_monitoring_set).c_str());
+      break;
+    case RECORDING_STATUS: publish_command(pub_service.recording.c_str()
+                                          ,String(single_status.is_recording_set).c_str());
+    break;                            
+    case BEACON_STATUS: publish_command(pub_service.beacon.c_str()
+                                          ,String(single_status.is_hazard_beacon_set).c_str());
+    break;                                        
+    case BUZZER_STATUS: publish_command(pub_service.buzzer.c_str()
+                                          ,String(single_status.is_buzzer_set).c_str());
+    break;                                        
+    case ALARM_STATUS: publish_command(pub_service.alarm.c_str()
+                                          ,String(single_status.is_alarm_set).c_str());    
+    break;                                          
+    case RESOLUTION_STATUS: publish_command(pub_service.resolution.c_str()
+                                          ,String(single_status.camera_resolution).c_str()); 
+    break;                                        
+    case CONTINOUS_STATUS: publish_command(pub_service.continous.c_str()
+                                          ,String(single_status.is_sending_status_continous_set).c_str());                                                                                                                                                           
+    break;                                        
+
+    default:
+      break;
+  }
+}
+
+void mqtt_handling::publish_all_status(system_status single_status)
+{
+  //publish_command(pub_service.status.c_str(),status);
   publish_command(pub_service.resolution.c_str(),String(single_status.camera_resolution).c_str());
   publish_command(pub_service.alarm.c_str(),String(single_status.is_alarm_set).c_str());
   publish_command(pub_service.buzzer.c_str(),String(single_status.is_buzzer_set).c_str());
@@ -253,6 +285,11 @@ void mqtt_handling::get_status(String topic, String message, system_status &stat
       publish_command(pub_service.resolution.c_str()
                             ,message.c_str());
   }
+
+  else if(topic.equals(sub_service.status))
+  {
+    publish_single_status(message.toInt(),status);                                
+  }
 }
 
 void mqtt_handling::subscribe()
@@ -267,6 +304,7 @@ void mqtt_handling::subscribe()
   client_mqtt.subscribe(sub_service.buzzer.c_str());
   client_mqtt.subscribe(sub_service.continous.c_str());
   client_mqtt.subscribe(sub_service.token.c_str());
+  client_mqtt.subscribe(sub_service.status.c_str());
 }
 
 void mqtt_handling::unsubscribe()
@@ -281,6 +319,7 @@ void mqtt_handling::unsubscribe()
   client_mqtt.unsubscribe(sub_service.recording.c_str());
   client_mqtt.unsubscribe(sub_service.resolution.c_str());
   client_mqtt.unsubscribe(sub_service.token.c_str());
+  client_mqtt.unsubscribe(sub_service.status.c_str());
 }
 
 bool mqtt_handling::token_received()

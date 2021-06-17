@@ -37,6 +37,18 @@
 #define MQTT_PUB_STAT_IS_BUZZER     MQTT_DEVICE_ID "is_buzzer"
 #define MQTT_PUB_STAT_IS_CONT       MQTT_DEVICE_ID "is_continous"
 
+#define PIR_MOVE_DETECTED       "1"
+#define PIR_MOVE_NOT_DETECTED   "0"
+
+#define MONITORING_STATUS       0
+#define RECORDING_STATUS        1        
+#define BEACON_STATUS           2
+#define BUZZER_STATUS           3
+#define ALARM_STATUS            4
+#define RESOLUTION_STATUS       5
+#define CONTINOUS_STATUS        6
+#define ALL_STATUS              7
+
 struct system_status
 {
     bool is_monitoring_set = false;
@@ -75,6 +87,7 @@ struct mqtt_sub
     String resolution;
     String continous;
     String token;
+    String status;
 };
 
 
@@ -107,7 +120,9 @@ class mqtt_handling
         mqtt_handling(PubSubClient &client_mqtt);
         void start(const char* host, const int port, MQTT_CALLBACK);
         void publish_command(const char* Key, const char* Value);
-        void publish_status(const char* status, system_status single_status);
+        void publish_all_status(system_status single_status);
+        //void publish_status(const char* status, system_status single_status);
+        void publish_single_status(int index, system_status single_status);
         void disconnect(void);
         void loop();
         bool token_received();

@@ -354,11 +354,15 @@ void task_motion_counter(void *pvParameters)
         pir_trigged = true;
         motion_counter++; /// Global variable to count the number of detections
         Serial.println("Event Counted: "+String(motion_counter));
+        mqtt.publish_command(mqtt.get_pub_service().move.c_str()
+                              ,PIR_MOVE_DETECTED);
         while(peripheral.pir_state())
         {
           Serial.println(F("Event Loop:"));
           vTaskDelay(500);
         }
+        mqtt.publish_command(mqtt.get_pub_service().move.c_str()
+                              ,PIR_MOVE_NOT_DETECTED);
         pir_trigged = false;
         
       }
@@ -378,7 +382,7 @@ void task_motion_counter(void *pvParameters)
   }
 }
 
-/// Double checking if token received correctly
+/// Double checking if token has been received correctly
 void task_check_mqtt_token(void *pvParameters)
 {
   (void) pvParameters;
@@ -407,7 +411,8 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       if(!realtime_capturing_activated)
       {
         if(status.is_sending_status_continous_set)
-        {mqtt.publish_status(get_status().c_str(),status);}
+        //{mqtt.publish_status(get_status().c_str(),status);}
+        {mqtt.publish_all_status(status);}
 
         // Sending images on demand
         if(status.is_recording_set)
@@ -424,7 +429,8 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
           for(int i=0;i<IMAGES_MAX_NUM;i++)
           {
             if(status.is_sending_status_continous_set)
-              mqtt.publish_status(get_status().c_str(),status);
+              //mqtt.publish_status(get_status().c_str(),status);
+              mqtt.publish_all_status(status);
             mqtt.send_photo_RT(image_holder[i],image_size_holder[i]);
             free(image_holder[i]);
           }
@@ -517,13 +523,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length)
   }
   Serial.println();
 
-  if(message_string.equals(MQTT_SUBSCRIBE_SEND_STATUS))
-  {
-    mqtt.publish_status(get_status().c_str(),status);
-    return;
-  }
-
- mqtt.get_status(topic_string, message_string, status, camera);
+  mqtt.get_status(topic_string, message_string, status, camera);
 }
 
 ///////////////////////////////////////////////////
