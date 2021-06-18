@@ -120,8 +120,7 @@ class mqtt_handling
         mqtt_handling(PubSubClient &client_mqtt);
         void start(const char* host, const int port, MQTT_CALLBACK);
         void publish_command(const char* Key, const char* Value);
-        void publish_all_status(system_status single_status);
-        //void publish_status(const char* status, system_status single_status);
+        void publish_status(const char* status, system_status single_status);
         void publish_single_status(int index, system_status single_status);
         void disconnect(void);
         void loop();

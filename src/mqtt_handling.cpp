@@ -134,9 +134,9 @@ void mqtt_handling::publish_single_status(int index, system_status single_status
   }
 }
 
-void mqtt_handling::publish_all_status(system_status single_status)
+void mqtt_handling::publish_status(const char* status, system_status single_status)
 {
-  //publish_command(pub_service.status.c_str(),status);
+  publish_command(pub_service.status.c_str(),status);
   publish_command(pub_service.resolution.c_str(),String(single_status.camera_resolution).c_str());
   publish_command(pub_service.alarm.c_str(),String(single_status.is_alarm_set).c_str());
   publish_command(pub_service.buzzer.c_str(),String(single_status.is_buzzer_set).c_str());
@@ -319,7 +319,7 @@ void mqtt_handling::unsubscribe()
   client_mqtt.unsubscribe(sub_service.recording.c_str());
   client_mqtt.unsubscribe(sub_service.resolution.c_str());
   client_mqtt.unsubscribe(sub_service.token.c_str());
-  client_mqtt.unsubscribe(sub_service.status.c_str());
+  client_mqtt.subscribe(sub_service.status.c_str());
 }
 
 bool mqtt_handling::token_received()
