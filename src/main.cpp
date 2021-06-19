@@ -153,7 +153,18 @@ void wifi_client_mode ()
   err = gpio_set_intr_type(GPIO_NUM_13, GPIO_INTR_NEGEDGE);
   if (err != ESP_OK)
     printf_debug("set intr type failed with error 0x%x \r\n", err);
+
+
+  xTaskCreatePinnedToCore(
+    task_check_mqtt_token
+    ,  "Request from the server"
+    ,  1024  // Stack size
+    ,  NULL
+    ,  5  // Priority
+    ,  &real_time_capturing_task 
+    ,  ARDUINO_RUNNING_CORE);
   
+  //vTaskDelay(2000);
   /// Defining online tasks
   xTaskCreatePinnedToCore(
     task_wifi_communication_service
@@ -173,14 +184,7 @@ void wifi_client_mode ()
     ,  &real_time_capturing_task 
     ,  ARDUINO_RUNNING_CORE);
 
-    xTaskCreatePinnedToCore(
-    task_check_mqtt_token
-    ,  "Request from the server"
-    ,  1024  // Stack size
-    ,  NULL
-    ,  3  // Priority
-    ,  &real_time_capturing_task 
-    ,  ARDUINO_RUNNING_CORE);
+    
 
   #ifdef DEBUG_MODE
   Serial.println(F("Threads Added"));
@@ -282,7 +286,7 @@ void task_rgb_handling(void *pvParameters)
     /// PIR trigged mode
     else if(pir_trigged)
     {
-      Serial.println(F("RGB PIR trigged"));
+      //Serial.println(F("RGB PIR trigged"));
       long cycle_time = xTaskGetTickCount() + ALARM_LENGTH; 
       while(cycle_time>xTaskGetTickCount())
         if(status.is_hazard_beacon_set)

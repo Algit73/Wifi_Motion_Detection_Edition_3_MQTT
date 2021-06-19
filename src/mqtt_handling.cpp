@@ -26,27 +26,27 @@ void mqtt_handling::init()
   String pub_string = mqtt_token + "/pub/";
 
   sub_service.alarm = sub_string + "alarm";
-  sub_service.beacon = sub_string + "beacon";
-  sub_service.buzzer = sub_string + "buzzer";
+  sub_service.beacon = sub_string + "Beacon";
+  sub_service.buzzer = sub_string + "Buzzer";
   sub_service.continous = sub_string + "continous";
-  sub_service.monitoring = sub_string + "monitoring";
-  sub_service.recording = sub_string + "recording";
+  sub_service.monitoring = sub_string + "Detector";
+  sub_service.recording = sub_string + "Capture";
   sub_service.resolution = sub_string + "resolution";
   sub_service.token = sub_string + "token";
   sub_service.status = sub_string + "status";
 
   
   pub_service.alarm = pub_string + "alarm";
-  pub_service.beacon = pub_string + "beacon";
-  pub_service.buzzer = pub_string + "buzzer";
+  pub_service.beacon = pub_string + "Beacon";
+  pub_service.buzzer = pub_string + "Buzzer";
   pub_service.continous = pub_string + "continous";
-  pub_service.monitoring = pub_string + "monitoring";
-  pub_service.recording = pub_string + "recording";
+  pub_service.monitoring = pub_string + "Detector";
+  pub_service.recording = pub_string + "Capture";
   pub_service.resolution = pub_string + "resolution";
   pub_service.status = pub_string + "status";
   pub_service.token = pub_string + "token";
   pub_service.image = pub_string + "image";
-  pub_service.move = pub_string + "move";
+  pub_service.move = pub_string + "Moving";
 
   Serial.print("PUB: ");
   Serial.println(pub_service.alarm);
