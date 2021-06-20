@@ -7,14 +7,15 @@ e2prom_handling e2_prom;
 
 
 mqtt_handling::mqtt_handling(PubSubClient &client_mqtt)
-{this->client_mqtt = client_mqtt;}
+{this->client_mqtt = client_mqtt; is_token_received = false;}
 
 void mqtt_handling::start(const char* host, const int port,MQTT_CALLBACK_SIGNATURE)
 {
+  mqtt_token = MQTT_DEVICE_ID;
   init();
   client_mqtt.setServer(host, port);
   client_mqtt.setCallback(callback);
-  mqtt_token = MQTT_DEVICE_ID;
+  
   
   
 }
@@ -45,7 +46,7 @@ void mqtt_handling::init()
   pub_service.resolution = pub_string + "resolution";
   pub_service.status = pub_string + "status";
   pub_service.token = pub_string + "token";
-  pub_service.image = pub_string + "image";
+  pub_service.image = pub_string + "Image";
   pub_service.move = pub_string + "Moving";
 
   Serial.print("PUB: ");
@@ -61,7 +62,11 @@ void mqtt_handling::reconnect()
   while (!client_mqtt.connected()) 
   {
     if(WiFi.status() != WL_CONNECTED)
+    {
+      Serial.println("WiFi disconnected");
       break;
+    }
+      
 
     Serial.print(F("Attempting MQTT connection..."));
     // Attempt to connect

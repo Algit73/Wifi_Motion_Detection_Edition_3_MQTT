@@ -155,17 +155,20 @@ void wifi_client_mode ()
     printf_debug("set intr type failed with error 0x%x \r\n", err);
 
 
+
+
   xTaskCreatePinnedToCore(
     task_check_mqtt_token
     ,  "Request from the server"
     ,  1024  // Stack size
     ,  NULL
-    ,  5  // Priority
+    ,  2  // Priority
     ,  &real_time_capturing_task 
     ,  ARDUINO_RUNNING_CORE);
   
   //vTaskDelay(2000);
   /// Defining online tasks
+  
   xTaskCreatePinnedToCore(
     task_wifi_communication_service
     ,  "Request from the server"
@@ -183,7 +186,7 @@ void wifi_client_mode ()
     ,  5  // Priority
     ,  &real_time_capturing_task 
     ,  ARDUINO_RUNNING_CORE);
-
+  
     
 
   #ifdef DEBUG_MODE
@@ -355,7 +358,7 @@ void task_motion_counter(void *pvParameters)
       /// User controlled
       if(peripheral.pir_state()&&status.is_monitoring_set)
       {
-        if(!ready_to_send)
+        if(!ready_to_send&&!status.is_recording_set)
         mqtt.publish_command(mqtt.get_pub_service().move.c_str()
                               ,PIR_MOVE_DETECTED);
         pir_trigged = true;
@@ -392,8 +395,9 @@ void task_motion_counter(void *pvParameters)
 void task_check_mqtt_token(void *pvParameters)
 {
   (void) pvParameters;
+  Serial.println(F("Receiving Token1"));
   vTaskDelay(3000);
-  Serial.println(F("Receiving Token"));
+  Serial.println(F("Receiving Token2"));
   while(!mqtt.token_received())
   {
     mqtt.publish_command(MQTT_PUB_SET_TOKEN,MQTT_DEVICE_ID);
@@ -412,6 +416,14 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
   Serial.println("");
   while(true)
   {
+    
+    if(!mqtt.token_received())
+    {
+      vTaskDelay(100);
+      mqtt.loop();
+      continue;
+    }
+    
     if(wifi.is_connected())
     { 
       if(!realtime_capturing_activated)
@@ -421,7 +433,17 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
 
         // Sending images on demand
         if(status.is_recording_set)
+        {
+          if(peripheral.pir_state())
+          {
+            mqtt.publish_command(mqtt.get_pub_service().move.c_str()
+                            ,PIR_MOVE_DETECTED);
+            mqtt.publish_command(mqtt.get_pub_service().move.c_str()
+            ,PIR_MOVE_NOT_DETECTED);
+          }
           mqtt.send_photo();
+        }
+          
         
         mqtt.loop();
         vTaskDelay(100);
@@ -429,15 +451,16 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       
       else
       {
+        Serial.println("Ready_to_send?");
         if(ready_to_send)//&&!reset_activated)
         {
           for(int i=0;i<IMAGES_MAX_NUM;i++)
           {
             if(status.is_sending_status_continous_set)
               mqtt.publish_status(get_status().c_str(),status);
-            else
-              mqtt.publish_command(mqtt.get_pub_service().move.c_str()
-                            ,peripheral.pir_state()?PIR_MOVE_DETECTED:PIR_MOVE_NOT_DETECTED);
+            //else
+            //  mqtt.publish_command(mqtt.get_pub_service().move.c_str()
+            //                ,peripheral.pir_state()?PIR_MOVE_DETECTED:PIR_MOVE_NOT_DETECTED);
             
             mqtt.send_photo_RT(image_holder[i],image_size_holder[i]);
             free(image_holder[i]);
@@ -460,6 +483,8 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       WiFi.reconnect();
       while (WiFi.status() != WL_CONNECTED)
       {
+        Serial.println(".");
+        vTaskDelay(500);
         /* code */
       }
       
