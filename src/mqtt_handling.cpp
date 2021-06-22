@@ -70,7 +70,7 @@ void mqtt_handling::reconnect()
 
     Serial.print(F("Attempting MQTT connection..."));
     // Attempt to connect
-    if (client_mqtt.connect(MQTT_ID)) 
+    if (client_mqtt.connect(MQTT_DEVICE_ID)) 
     {
       Serial.println(F("connected"));
       // Subscribes

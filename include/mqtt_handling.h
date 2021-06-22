@@ -7,7 +7,7 @@
 #include <WiFi.h>
 #include <camera_handling.h>
 
-#define MQTT_ID                     "HuHoScSy"
+
 #define MQTT_DEVICE_ID              "123a1df23fdsa12zxcv3h1re23"
 #define MQTT_SUB_SET_TOKEN          "HSHYR_" MQTT_DEVICE_ID "/setToken"
 #define MQTT_PUB_SET_TOKEN          "HSHYR_register"
@@ -17,25 +17,7 @@
 #define MQTT_SUBSCRIBE_COMMAND      MQTT_DEVICE_ID "system_command"
 #define MQTT_SUBSCRIBE_SEND_STATUS  MQTT_DEVICE_ID "send_status"
 
-#define MQTT_PUB_IMAGE              MQTT_DEVICE_ID "camera_image"
 
-#define MQTT_SUB_COM_SET_REC        MQTT_DEVICE_ID "set_recording"
-#define MQTT_SUB_COM_SET_ALARM      MQTT_DEVICE_ID "set_alarm"
-#define MQTT_SUB_COM_SET_BEACON     MQTT_DEVICE_ID "set_beacon"
-#define MQTT_SUB_COM_SET_MON        MQTT_DEVICE_ID "set_monitoring"
-#define MQTT_SUB_COM_SET_LIGHT      MQTT_DEVICE_ID "set_light"
-#define MQTT_SUB_COM_SET_RES        MQTT_DEVICE_ID "set_resolution"
-#define MQTT_SUB_COM_SET_BUZZER     MQTT_DEVICE_ID "set_buzzer"
-#define MQTT_SUB_COM_SET_CONT       MQTT_DEVICE_ID "set_continous"
-
-#define MQTT_PUB_STAT_IS_REC        MQTT_DEVICE_ID "is_recording"
-#define MQTT_PUB_STAT_IS_ALARM      MQTT_DEVICE_ID "is_alarm"
-#define MQTT_PUB_STAT_IS_BEACON     MQTT_DEVICE_ID "is_beacon"
-#define MQTT_PUB_STAT_IS_MON        MQTT_DEVICE_ID "is_monitoring"
-#define MQTT_PUB_STAT_IS_LIGHT      MQTT_DEVICE_ID "is_light"
-#define MQTT_PUB_STAT_IS_RES        MQTT_DEVICE_ID "is_resolution"
-#define MQTT_PUB_STAT_IS_BUZZER     MQTT_DEVICE_ID "is_buzzer"
-#define MQTT_PUB_STAT_IS_CONT       MQTT_DEVICE_ID "is_continous"
 
 #define PIR_MOVE_DETECTED       "1"
 #define PIR_MOVE_NOT_DETECTED   "0"
