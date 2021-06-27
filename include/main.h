@@ -38,18 +38,6 @@ String get_status(void);
 const char* PARAM_INPUT_1 = "ssid";
 const char* PARAM_INPUT_2 = "password";
 // HTML web page to handle 3 input fields (input1, input2, input3)
-const char html_page [] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html><head>
-  <title>ESP Input Form</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head><body>
-  <form action="/get">
-    ssid: <input type="text" name="ssid"><br><br>
-    password: <input type="text" name="password"><br><br>
-    <input type="submit" value="Submit">
-  </form><br>
-  
-</body></html>)rawliteral";
 
 const char wifiConfigurationSucceedPage [] PROGMEM = "<!DOCTYPE html><html lang='fa' dir='rtl'><head><meta charset='utf-8'><title>هوشیار | تنظیمات شبکه</title><meta name='viewport' content='width=device-width'></head><body><h1>تبریک</h1><p>در صورت صحیح بودن اطلاعات اتصال به شبکه ی داخلی،دستگاه شما تا لحضات دیگر به شبکه متصل خواهد شد...</p></body></html>";
 
