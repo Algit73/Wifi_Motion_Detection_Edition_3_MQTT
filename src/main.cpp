@@ -76,7 +76,7 @@ void on_page_not_found(AsyncWebServerRequest *request)
   request->send(404, "text/plain", "Not found");
 }
 
-static void IRAM_ATTR detectsMovement(void * arg)
+static void IRAM_ATTR setup_event(void * arg)
 {
   #ifdef DEBUG_MODE
   Serial.println(F("Interrupt"));
@@ -115,6 +115,8 @@ void setup()
 {
 
   peripheral.setup();
+  //check_wifi_reset_mode();
+  //*
 
   #ifdef DEBUG_MODE
   Serial.println(F("Run"));
@@ -129,6 +131,7 @@ void setup()
   #ifdef DEBUG_MODE
   Serial.println(F("OK"));
   #endif
+  //*/
   
 }
 
@@ -146,25 +149,31 @@ void wifi_client_mode ()
   camera.camera_init(FRAMESIZE_XGA);
   delay(10);
 
-  bool err = gpio_isr_handler_add(GPIO_NUM_13, &detectsMovement, (void *) 13);
+
+  /// Defining Interrupt for the SETUP_PIN
+  /// GPIO_NUM should be the same as the SETUP_PIN
+  bool err = gpio_isr_handler_add(GPIO_NUM_14, &setup_event, (void *) 14);
   if (err != ESP_OK)
     printf_debug("handler add failed with error 0x%x \r\n", err);
 
-  err = gpio_set_intr_type(GPIO_NUM_13, GPIO_INTR_NEGEDGE);
+  err = gpio_set_intr_type(GPIO_NUM_14, GPIO_INTR_NEGEDGE);
   if (err != ESP_OK)
     printf_debug("set intr type failed with error 0x%x \r\n", err);
 
 
 
 
+  
   xTaskCreatePinnedToCore(
     task_check_mqtt_token
-    ,  "Request from the server"
+    ,  "Request Token from the server"
     ,  1024  // Stack size
     ,  NULL
     ,  2  // Priority
     ,  &real_time_capturing_task 
     ,  ARDUINO_RUNNING_CORE);
+    
+    
   
   //vTaskDelay(2000);
   /// Defining online tasks
@@ -252,6 +261,14 @@ void calling_offline_threads()
 // Reset to Go to Access Mode
 void loop()
 {
+  //check_wifi_reset_mode();
+  /*
+  if(digitalRead(SETUP_PIN))
+    digitalWrite(LED_BUILTIN,HIGH); 
+  else
+    digitalWrite(LED_BUILTIN,LOW);
+    */
+    //vTaskDelay(10);
   vTaskDelete(NULL);
 }
 
@@ -424,6 +441,7 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       continue;
     }
     
+    
     if(wifi.is_connected())
     { 
       if(!realtime_capturing_activated)
@@ -451,7 +469,7 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       
       else
       {
-        Serial.println("Ready_to_send?");
+        //Serial.println("Ready_to_send?");
         if(ready_to_send)//&&!reset_activated)
         {
           for(int i=0;i<IMAGES_MAX_NUM;i++)
@@ -464,6 +482,13 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
             
             mqtt.send_photo_RT(image_holder[i],image_size_holder[i]);
             free(image_holder[i]);
+            if (status.camera_resolution<5)
+              vTaskDelay(400);
+            else if(status.camera_resolution<7)
+              vTaskDelay(200);
+            else
+              vTaskDelay(100);
+
           }
           mqtt.publish_command(mqtt.get_pub_service().move.c_str()
                             ,PIR_MOVE_NOT_DETECTED);
@@ -504,15 +529,32 @@ void task_capturing_real_time(void *pvParameters)
     if(pir_trigged&&!ready_to_send&&!status.is_recording_set)
     {
       realtime_capturing_activated = true;
-
+      int camera_quality = 13;
+      camera.quality(camera_quality);
       for(int i=0;i<IMAGES_MAX_NUM;i++)
       {
-        camera_fb_t * fb = camera.capture();
-        //printf_debug("\nImage Num: %d",i+1);
-        image_size_holder[i] = fb->len;
-        image_holder[i] = (uint8_t*)ps_malloc(fb->len);
-        std::copy(fb->buf, fb->buf + fb->len, image_holder[i]);
-        camera.free_resource(fb);
+        
+        /// Lowering picture quality upon overflowing
+        while(true)
+        {
+          camera_fb_t * fb = camera.capture();
+          //printf_debug("\nImage Num: %d",i+1);
+          image_size_holder[i] = fb->len;
+          image_holder[i] = (uint8_t*)ps_malloc(fb->len);
+          if(image_size_holder[i]>64*1024)
+          {
+            camera.quality(--camera_quality);
+            camera.free_resource(fb);
+            serial_debug("Pic Quality: "+String(camera_quality));
+            continue;
+          }
+        
+          std::copy(fb->buf, fb->buf + fb->len, image_holder[i]);
+          camera.free_resource(fb);
+          break;
+        }
+
+        /// Sending picture after taking two
         if(i>1)
           ready_to_send = true;
         vTaskDelay(500);

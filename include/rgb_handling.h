@@ -6,7 +6,7 @@
 #include "pins_arduino.h"
 #include <Adafruit_NeoPixel.h>
 
-#define LED_RGB         15
+#define LED_RGB         12
 #define NUMPIXELS       8
 #define ALARM_ONLY      0
 #define SIREN_ONLY      1

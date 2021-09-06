@@ -78,7 +78,22 @@ bool camera_handling::change_resolution(int index)
   {
     return false;
   }
+  sensor->set_quality(sensor,20);
   if(sensor->set_framesize(sensor,quality)!=0)
+    return false;
+  else
+    return true;
+}
+
+bool camera_handling::quality(int quality)
+{
+  sensor_t* sensor = esp_camera_sensor_get();
+  if (sensor == nullptr) 
+  {
+    return false;
+  }
+  
+  if(sensor->set_quality(sensor,quality)!=0)
     return false;
   else
     return true;

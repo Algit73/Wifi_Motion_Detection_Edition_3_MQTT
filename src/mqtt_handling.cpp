@@ -106,6 +106,7 @@ void mqtt_handling::publish_command(const char* key, const char* value)
 {
     loop();
     client_mqtt.publish(key,value);
+    //Serial.print("Command Sent");
 }
 
 void mqtt_handling::publish_single_status(int index, system_status single_status)

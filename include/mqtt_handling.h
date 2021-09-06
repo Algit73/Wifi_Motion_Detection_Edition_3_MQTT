@@ -8,7 +8,7 @@
 #include <camera_handling.h>
 
 
-#define MQTT_DEVICE_ID              "123a1df23fdsa12zxcv3h1re23"
+#define MQTT_DEVICE_ID              "c0a69d4b-c1c4-4884-84f3-bc634be16fb0"
 #define MQTT_SUB_SET_TOKEN          "HSHYR_" MQTT_DEVICE_ID "/setToken"
 #define MQTT_PUB_SET_TOKEN          "HSHYR_register"
 

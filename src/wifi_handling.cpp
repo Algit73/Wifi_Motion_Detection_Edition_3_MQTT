@@ -66,9 +66,7 @@ void wifi_handling::access_mode(NOT_FOUND callback)
         }
         //Serial.println(SSID+"\n"+Password);
         Serial.println(SSID+"\n"+Password);
-        request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" 
-                                        + inputParam +""+inputParam2+ ") with value: " + SSID +" and "+ Password+ 
-                                        "<br><a href=\"/\">Return to Home Page</a>");
+        request->send(200, "text/html", SUCCESS_PAGE_HTML);
         delay(3000); // Wait to settle system
         ESP.restart();  // Automtically restarts system into client mode
         

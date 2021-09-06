@@ -35,6 +35,7 @@ class camera_handling
         camera_handling();
         void camera_init(framesize_t quality);
         bool change_resolution(int index);
+        bool quality(int quality);
         camera_fb_t* capture();
         void free_resource(camera_fb_t* fb);
         void camera_deinit(void);
