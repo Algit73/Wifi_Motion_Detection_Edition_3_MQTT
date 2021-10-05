@@ -9,12 +9,14 @@ e2prom_handling e2_prom;
 mqtt_handling::mqtt_handling(PubSubClient &client_mqtt)
 {this->client_mqtt = client_mqtt; is_token_received = false;}
 
-void mqtt_handling::start(const char* host, const int port,MQTT_CALLBACK_SIGNATURE)
+void mqtt_handling::start(const char* host, const int port, const char* user, const char* password,MQTT_CALLBACK_SIGNATURE)
 {
   mqtt_token = MQTT_DEVICE_ID;
   init();
   client_mqtt.setServer(host, port);
   client_mqtt.setCallback(callback);
+  mqtt_user = user;
+  mqtt_password = password;
   
   
   
@@ -70,7 +72,7 @@ void mqtt_handling::reconnect()
 
     Serial.print(F("Attempting MQTT connection..."));
     // Attempt to connect
-    if (client_mqtt.connect(MQTT_DEVICE_ID)) 
+    if (client_mqtt.connect(MQTT_DEVICE_ID, mqtt_user.c_str(), mqtt_password.c_str())) 
     {
       Serial.println(F("connected"));
       // Subscribes

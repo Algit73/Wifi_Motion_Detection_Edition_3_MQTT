@@ -8,7 +8,7 @@
 #include <camera_handling.h>
 
 
-#define MQTT_DEVICE_ID              "c0a69d4b-c1c4-4884-84f3-bc634be16fb0"
+#define MQTT_DEVICE_ID              "6113340f-00a3-4448-9534-a44397294010"
 #define MQTT_SUB_SET_TOKEN          "HSHYR_" MQTT_DEVICE_ID "/setToken"
 #define MQTT_PUB_SET_TOKEN          "HSHYR_register"
 
@@ -87,6 +87,8 @@ class mqtt_handling
         PubSubClient client_mqtt;
         bool is_token_received = false;
         String mqtt_token;
+        String mqtt_user;
+        String mqtt_password;
         mqtt_pub pub_service;
         mqtt_sub sub_service;
         void init(void);
@@ -100,7 +102,7 @@ class mqtt_handling
     public:
 
         mqtt_handling(PubSubClient &client_mqtt);
-        void start(const char* host, const int port, MQTT_CALLBACK);
+        void start(const char* host, const int port, const char* user, const char* password, MQTT_CALLBACK);
         void publish_command(const char* Key, const char* Value);
         void publish_status(const char* status, system_status single_status);
         void publish_single_status(int index, system_status single_status);

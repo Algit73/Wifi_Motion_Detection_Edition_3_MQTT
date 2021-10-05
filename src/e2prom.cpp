@@ -41,39 +41,39 @@ wifi_authentications e2prom_handling::wifi_auth_read()
 {
   init();
 
-  Serial.println(F("Reading from Flash0:"));
+  //Serial.println(F("Reading from Flash0:"));
   for (int i = 0; i < EEPROM_SIZE; i++)
   {
     char beta = EEPROM.read(i);
-    Serial.print(beta); Serial.print(" ");
+    //Serial.print(beta); Serial.print(" ");
   }
     
-  Serial.println(F("Reading SSID from Flash:"));
+  //Serial.println(F("Reading SSID from Flash:"));
   int ssid_length;
   for (int i = 0; i < EEPROM_SIZE/2; i++)
   {
     char character;
     character = EEPROM.read(i);
-    Serial.print(character);
+    //Serial.print(character);
     ssid_length = i;
     if(character=='\n')
       break;
     ssid_password.ssid += character;
   }
-  Serial.print('\n');
-  Serial.println(F("Reading Password from Flash:"));
+  //Serial.print('\n');
+  //Serial.println(F("Reading Password from Flash:"));
   for (int i = ssid_length+1; i < EEPROM_SIZE; i++)
   {
     char character;
     character = EEPROM.read(i);
-    Serial.print(character);
+    //Serial.print(character);
     if(character=='\n')
       break;
     ssid_password.password += character;// byte(EEPROM.read(i))
   }
 
-  Serial.print(F("SSID: ")); Serial.println(ssid_password.ssid);
-  Serial.print(F("Password: ")); Serial.println(ssid_password.password);
+  //Serial.print(F("SSID: ")); Serial.println(ssid_password.ssid);
+  //Serial.print(F("Password: ")); Serial.println(ssid_password.password);
 
   return ssid_password;
 }

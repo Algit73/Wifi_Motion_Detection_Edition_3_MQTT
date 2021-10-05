@@ -15,25 +15,30 @@
 
 
 
-// MQTT Configs
-const char* mqtt_host = "broker.hivemq.com";
+/// MQTT Configs
+//const char* mqtt_host = "broker.hivemq.com";
+const char* mqtt_host = "mqtt.hushyaar.ir";
 //const char* mqtt_host = "broker.emqx.io";
-const int mqtt_port = 1883;
+//const int mqtt_port = 1883;
+const int mqtt_port = 1773;
+
+const char* mqtt_user_name = "tgbnhyrfvbgt54rt543e3edfr4";
+const char* mqtt_password = "ujhyujhyuikjuikj789oi89";
 
 
 wifi_handling wifi;
 
-// Wifi and MQTT initialization
+/// Wifi and MQTT initialization
 WiFiClient client_http;   // A client for HTTP
 PubSubClient client_mqtt(client_http);
 mqtt_handling mqtt(client_mqtt);
 system_status status;
 
-// Image Holder for Sending Through MQTT
+/// Image Holder for Sending Through MQTT
 uint8_t* image_holder[30];
 size_t image_size_holder[30];
 
-// Defining Handlers;
+/// Defining Handlers;
 rgb_handling rgb;
 peripheral_handling peripheral;
 
@@ -212,7 +217,7 @@ void start_client_mode()
   wifi.local_ip();
   offline_mode = false;
   /// Establishing MQTT Connection
-  mqtt.start(mqtt_host, mqtt_port,mqtt_callback);
+  mqtt.start(mqtt_host, mqtt_port, mqtt_user_name, mqtt_password, mqtt_callback);
   //mqtt.publish_status(get_status().c_str(),status);
   mqtt.publish_command(MQTT_PUB_SET_TOKEN,MQTT_DEVICE_ID);
 
@@ -307,6 +312,8 @@ void task_rgb_handling(void *pvParameters)
     else if(pir_trigged)
     {
       //Serial.println(F("RGB PIR trigged"));
+      if(status.is_monitoring_set)
+        vTaskDelay(3000);
       long cycle_time = xTaskGetTickCount() + ALARM_LENGTH; 
       while(cycle_time>xTaskGetTickCount())
         if(status.is_hazard_beacon_set)
@@ -342,6 +349,8 @@ void task_buzzer_alarm(void *pvParameters)
     /// PIR trigged mode
     else if(pir_trigged)
     {
+      if(status.is_monitoring_set)
+        vTaskDelay(3000);
       //Serial.println(F("BUZ PIR trigged"));
       long cycle_time = xTaskGetTickCount() + ALARM_LENGTH;
       while(cycle_time>xTaskGetTickCount())
@@ -425,7 +434,7 @@ void task_check_mqtt_token(void *pvParameters)
 }
 
 
-void task_wifi_communication_service(void *pvParameters)  // This is a task.
+void task_wifi_communication_service(void *pvParameters) 
 {
   (void) pvParameters;
   
@@ -470,24 +479,22 @@ void task_wifi_communication_service(void *pvParameters)  // This is a task.
       else
       {
         //Serial.println("Ready_to_send?");
-        if(ready_to_send)//&&!reset_activated)
+        if(ready_to_send)
         {
           for(int i=0;i<IMAGES_MAX_NUM;i++)
           {
             if(status.is_sending_status_continous_set)
               mqtt.publish_status(get_status().c_str(),status);
-            //else
-            //  mqtt.publish_command(mqtt.get_pub_service().move.c_str()
-            //                ,peripheral.pir_state()?PIR_MOVE_DETECTED:PIR_MOVE_NOT_DETECTED);
+          
             
             mqtt.send_photo_RT(image_holder[i],image_size_holder[i]);
             free(image_holder[i]);
             if (status.camera_resolution<5)
               vTaskDelay(400);
             else if(status.camera_resolution<7)
-              vTaskDelay(200);
+              vTaskDelay(400);
             else
-              vTaskDelay(100);
+              vTaskDelay(400);
 
           }
           mqtt.publish_command(mqtt.get_pub_service().move.c_str()
@@ -555,7 +562,7 @@ void task_capturing_real_time(void *pvParameters)
         }
 
         /// Sending picture after taking two
-        if(i>1)
+        if(i>2)
           ready_to_send = true;
         vTaskDelay(500);
       }
