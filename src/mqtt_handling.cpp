@@ -65,8 +65,15 @@ void mqtt_handling::reconnect()
   {
     if(WiFi.status() != WL_CONNECTED)
     {
-      Serial.println("WiFi disconnected");
-      break;
+      Serial.println("WiFi disconnected: MQTT");
+      WiFi.reconnect();
+      while (WiFi.status() != WL_CONNECTED)
+      {
+        Serial.print(".");
+        vTaskDelay(500);
+        /* code */
+      }
+      //break;
     }
       
 

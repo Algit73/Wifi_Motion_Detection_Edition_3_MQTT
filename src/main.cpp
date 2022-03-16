@@ -22,8 +22,8 @@ const char* mqtt_host = "mqtt.hushyaar.ir";
 //const int mqtt_port = 1883;
 const int mqtt_port = 1773;
 
-const char* mqtt_user_name = "tgbnhyrfvbgt54rt543e3edfr4";
-const char* mqtt_password = "ujhyujhyuikjuikj789oi89";
+const char* mqtt_user_name = MQTT_USER_NAME;
+const char* mqtt_password = MQTT_PASSWORD;
 
 
 wifi_handling wifi;
@@ -68,6 +68,7 @@ int motion_counter = 0;   // A global counter to count the number of times PIR t
 /// Tasks Handlers
 static TaskHandle_t reset_task = NULL;
 static TaskHandle_t real_time_capturing_task = NULL;
+static TaskHandle_t mqtt_check_task = NULL;
 static TaskHandle_t wifi_communication_task = NULL;
 static TaskHandle_t motion_counter_task = NULL;
 
@@ -126,12 +127,19 @@ void setup()
   #ifdef DEBUG_MODE
   Serial.println(F("Run"));
   #endif
-  
+  //wifi_client_mode();
+  //wifi.access_mode(on_page_not_found);
   /// Finding out the operational mode
   if(wifi.get_mode())
     wifi_client_mode();
   else
+  {
+    reset_activated = true;
+    calling_offline_threads();
     wifi.access_mode(on_page_not_found);
+  }
+  // reset_activated = true;
+  // calling_offline_threads();
 
   #ifdef DEBUG_MODE
   Serial.println(F("OK"));
@@ -154,14 +162,14 @@ void wifi_client_mode ()
   camera.camera_init(FRAMESIZE_XGA);
   delay(10);
 
-
+  
   /// Defining Interrupt for the SETUP_PIN
   /// GPIO_NUM should be the same as the SETUP_PIN
-  bool err = gpio_isr_handler_add(GPIO_NUM_14, &setup_event, (void *) 14);
+  bool err = gpio_isr_handler_add(GPIO_NUM_15, &setup_event, (void *) 15);
   if (err != ESP_OK)
     printf_debug("handler add failed with error 0x%x \r\n", err);
 
-  err = gpio_set_intr_type(GPIO_NUM_14, GPIO_INTR_NEGEDGE);
+  err = gpio_set_intr_type(GPIO_NUM_15, GPIO_INTR_NEGEDGE);
   if (err != ESP_OK)
     printf_debug("set intr type failed with error 0x%x \r\n", err);
 
@@ -175,7 +183,7 @@ void wifi_client_mode ()
     ,  1024  // Stack size
     ,  NULL
     ,  2  // Priority
-    ,  &real_time_capturing_task 
+    ,  &mqtt_check_task 
     ,  ARDUINO_RUNNING_CORE);
     
     
@@ -238,24 +246,27 @@ void calling_offline_threads()
     ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  NULL 
     ,  ARDUINO_RUNNING_CORE);
-  
-  xTaskCreatePinnedToCore(
-    task_motion_counter
-    ,  "Counting the detection"
-    ,  1024*4  // Stack size
-    ,  NULL
-    ,  3  // Priority
-    ,  &motion_counter_task 
-    ,  ARDUINO_RUNNING_CORE);
-
+  if(!reset_activated)
+  {
+    offline_mode = false;
     xTaskCreatePinnedToCore(
-      task_buzzer_alarm
-      ,  "Buzzer Controller"
+      task_motion_counter
+      ,  "Counting the detection"
       ,  1024*4  // Stack size
       ,  NULL
       ,  3  // Priority
-      ,  NULL 
+      ,  &motion_counter_task 
       ,  ARDUINO_RUNNING_CORE);
+
+      xTaskCreatePinnedToCore(
+        task_buzzer_alarm
+        ,  "Buzzer Controller"
+        ,  1024*4  // Stack size
+        ,  NULL
+        ,  3  // Priority
+        ,  NULL 
+        ,  ARDUINO_RUNNING_CORE);
+  }
 
     #ifdef DEBUG_MODE
     Serial.println(F("Offline Threads End"));
@@ -299,37 +310,58 @@ void task_reset_device(void *pvParameters)
 void task_rgb_handling(void *pvParameters)  
 {
   (void) pvParameters;
-
+  // int index;
   for (;;)
   {
-    
-    //// Simple fading alarm
-    /// User contrlled mode
-    if(status.is_alarm_set&&status.is_hazard_beacon_set)
-        rgb.siren_and_alarm();
-
-    /// PIR trigged mode
-    else if(pir_trigged)
+    if(!reset_activated)
     {
-      //Serial.println(F("RGB PIR trigged"));
-      if(status.is_monitoring_set)
-        vTaskDelay(3000);
-      long cycle_time = xTaskGetTickCount() + ALARM_LENGTH; 
-      while(cycle_time>xTaskGetTickCount())
-        if(status.is_hazard_beacon_set)
-          rgb.siren_and_alarm();
+      if(WiFi.status() == WL_CONNECTED)
+      {
+        //// Simple fading alarm
+        /// User contrlled mode
+        if(status.is_alarm_set&&status.is_hazard_beacon_set)
+            rgb.siren_and_alarm();
 
-      rgb.on_off(OFF);
-      vTaskDelay(1);
+        /// PIR trigged mode
+        else if(pir_trigged)
+        {
+          //Serial.println(F("RGB PIR trigged"));
+          if(status.is_monitoring_set)
+            vTaskDelay(3000);
+          long cycle_time = xTaskGetTickCount() + ALARM_LENGTH; 
+          while(cycle_time>xTaskGetTickCount())
+            if(status.is_hazard_beacon_set)
+              rgb.siren_and_alarm();
+
+          rgb.on_off(OFF);
+          vTaskDelay(1);
+        }
+        
+
+        /// Default
+        else
+        {
+          rgb.on_off(ON);
+          vTaskDelay(100);
+        }
+      }
+      else
+      {
+        int index = 0;
+        while(!wifi.is_connected()) 
+        {
+          index++;
+          rgb.connecting_to_wifi(index%NUMPIXELS,index/NUMPIXELS);
+        }
+
+      }
     }
-    
-
-    /// Default
     else
     {
-      rgb.on_off(ON);
-      vTaskDelay(100);
+      rgb.reset_mode();
+      vTaskDelay(1);
     }
+
   }
 }
 
@@ -463,6 +495,7 @@ void task_wifi_communication_service(void *pvParameters)
         {
           if(peripheral.pir_state())
           {
+            Serial.print("PIR when live monitoring");
             mqtt.publish_command(mqtt.get_pub_service().move.c_str()
                             ,PIR_MOVE_DETECTED);
             mqtt.publish_command(mqtt.get_pub_service().move.c_str()
@@ -489,11 +522,12 @@ void task_wifi_communication_service(void *pvParameters)
             
             mqtt.send_photo_RT(image_holder[i],image_size_holder[i]);
             free(image_holder[i]);
+            /*
             if (status.camera_resolution<5)
               vTaskDelay(400);
             else if(status.camera_resolution<7)
               vTaskDelay(400);
-            else
+            else*/
               vTaskDelay(400);
 
           }
@@ -509,16 +543,17 @@ void task_wifi_communication_service(void *pvParameters)
     else
     {
       Serial.println(F("WiFi Disconnected"));
-      offline_mode = true;
+      //offline_mode = true;
       //wifi_trying_to_connect();
       ///TODO: needs modifications
       WiFi.reconnect();
       while (WiFi.status() != WL_CONNECTED)
       {
-        Serial.println(".");
+        Serial.print(".");
         vTaskDelay(500);
         /* code */
       }
+      Serial.println("");
       
       vTaskDelay(100);
     }

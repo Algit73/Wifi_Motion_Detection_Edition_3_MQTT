@@ -1,11 +1,16 @@
 #include "Arduino.h"
 
 // Pins assigning
-#define PIR_PIN         2
-#define LED_BUILTIN     15
+#define PIR_PIN         14
+#define LED_BUILTIN     12
 #define SIREN_PIN       13
-#define RGB_TEST        12
-#define SETUP_PIN       14
+#define RGB_TEST        2
+#define SETUP_PIN       15
+// #define PIR_PIN         2
+// #define LED_BUILTIN     15
+// #define SIREN_PIN       13
+// #define RGB_TEST        12
+// #define SETUP_PIN       14
 #define ON              true
 #define OFF             false
 

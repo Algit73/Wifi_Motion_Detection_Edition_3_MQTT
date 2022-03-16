@@ -6,7 +6,7 @@
 #include "pins_arduino.h"
 #include <Adafruit_NeoPixel.h>
 
-#define LED_RGB         12
+#define LED_RGB         2
 #define NUMPIXELS       8
 #define ALARM_ONLY      0
 #define SIREN_ONLY      1
@@ -24,5 +24,6 @@ class rgb_handling
         void error(void);
         void siren_alarm(void);
         void siren_and_alarm(void);
+        void reset_mode(void);
         void on_off(bool on);
 };

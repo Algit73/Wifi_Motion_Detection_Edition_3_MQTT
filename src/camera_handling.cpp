@@ -61,7 +61,7 @@ bool camera_handling::change_resolution(int index)
   switch (index)
   {
     case 0:  quality = FRAMESIZE_QQVGA;   break;
-    case 1:  quality = FRAMESIZE_QQVGA2;  break;
+    // case 1:  quality = FRAMESIZE_QQVGA2;  break;
     case 2:  quality = FRAMESIZE_QCIF;    break;
     case 3:  quality = FRAMESIZE_HQVGA;   break;
     case 4:  quality = FRAMESIZE_QVGA;    break;

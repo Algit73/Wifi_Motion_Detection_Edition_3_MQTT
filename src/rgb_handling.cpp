@@ -111,5 +111,30 @@ void rgb_handling::siren_and_alarm()
 
   //on_off(true);
 }
+void rgb_handling::reset_mode()
+{
+  //for (int i=0;i<3;i++)
+  //{
+    for (int pixel_value=10;pixel_value<200;pixel_value++)
+    {
+
+      for (int index=0;index<NUMPIXELS;index++)
+        pixels.setPixelColor(index, pixels.Color(10,pixel_value,10));
+      pixels.show();
+      
+      vTaskDelay(3);
+    }
+    for (int pixel_value=200;pixel_value>10;pixel_value--)
+    {
+        for (int index=0;index<NUMPIXELS;index++)
+          pixels.setPixelColor(index, pixels.Color(10,pixel_value,10));
+        pixels.show();
+
+      vTaskDelay(3);
+    }
+  //}
+
+  //on_off(true);
+}
 
 
